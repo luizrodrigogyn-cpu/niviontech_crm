@@ -9,8 +9,10 @@ import {reportsDomain} from './modules/reports.js';
 import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js';
+import {initBrandVisual} from './modules/brand-visual.js';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
+initBrandVisual(document.getElementById('brandCanvas'));
 
 const STORAGE={owner:'niviontech_owner',company:'niviontech_company'};
 const NEW_MENU_ITEMS=['organize'];
