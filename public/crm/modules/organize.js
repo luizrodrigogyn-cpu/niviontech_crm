@@ -30,8 +30,10 @@ export function analyzeConversationText(text,{now=new Date(),newStage='new',prop
   const client=cleanSubject(subjectMatch?.[1])||cleanSubject(companyMatch?.[1])||cleanSubject(firstSentence)||'Cliente a confirmar';
   const recognizedDate=dateFromText(text,now),timeMatch=text.match(/(?:às|as)\s*(\d{1,2})(?::|h)(\d{2})?/i),time=timeMatch?`${timeMatch[1].padStart(2,'0')}:${(timeMatch[2]||'00').padStart(2,'0')}`:'09:00';
   const isProposal=/proposta|orçamento/i.test(text),next=isProposal?'Preparar e enviar proposta':urgency==='high'?'Retornar contato com prioridade':'Realizar retorno ao cliente';
-  const details=[firstSentence,email&&`E-mail: ${email}`,phone&&`Telefone: ${phone}`,urgency!=='normal'&&`Urgência: ${urgency==='high'?'alta':'atenção'}`].filter(Boolean);
-  const draft={client:client.trim(),title:value?'Oportunidade identificada':'Novo atendimento',value,stage:isProposal?proposalStage:newStage,next,date:recognizedDate.date,time,phone,email,urgency,summary:details.join(' · ')};
+  const needMatch=firstSentence.match(new RegExp(`(?:${actionPattern})\\s+(.+)$`,'i'));
+  const need=(needMatch?.[1]||firstSentence||'Necessidade a confirmar').replace(/\s+/g,' ').trim();
+  const summary=[`CONTATO / EMPRESA\n${client.trim()}`,`NECESSIDADE IDENTIFICADA\n${need}`,`VALOR ESTIMADO\n${value?moneyLabel(value):'Não informado'}`,`PRÓXIMA AÇÃO\n${next}`,`PRAZO\n${recognizedDate.source?`${dateLabel(recognizedDate.date)} às ${time}`:'Data a confirmar'}`,`CONTATO\n${[phone&&`Telefone: ${phone}`,email&&`E-mail: ${email}`].filter(Boolean).join(' · ')||'Não informado'}`,`NÍVEL DE ATENÇÃO\n${urgency==='high'?'Alta':urgency==='attention'?'Atenção':'Normal'}`,`REGISTRO ORIGINAL\n${firstSentence||text.trim().slice(0,240)}`].join('\n\n');
+  const draft={client:client.trim(),title:value?'Oportunidade identificada':'Novo atendimento',value,stage:isProposal?proposalStage:newStage,next,date:recognizedDate.date,time,phone,email,urgency,summary};
   const understood=[client.trim(),value&&`negócio de ${moneyLabel(value)}`,recognizedDate.source&&`retorno ${recognizedDate.source} (${dateLabel(recognizedDate.date)})`,timeMatch&&`às ${time}`,phone&&`telefone ${phone}`,urgency!=='normal'&&`${urgency==='high'?'urgência alta':'atenção ao prazo'}`].filter(Boolean);
   return{draft,detected:{value:Boolean(valueMatch),date:Boolean(recognizedDate.source),phone:Boolean(phone),urgency:urgency!=='normal',email:Boolean(email),time:Boolean(timeMatch)},confirmation:`Entendi: ${understood.join(', ')}. Confirma?`};
 }
@@ -41,14 +43,14 @@ export function createHandoffSummary(deal,client,context={}){
   const history=Array.isArray(deal?.history)?deal.history.slice(0,4):[];
   const source=[context.reason,deal?.next,...interactions.map(item=>item.text||item.description||item.note||''),...history.map(item=>item.text||'')].filter(Boolean).join(' ');
   const reading=analyzeConversationText(source,{now:context.now});
-  const rawContext=reading?.draft?.summary||source||'Sem conversa anterior registrada';
-  const compactContext=rawContext.replace(/\s+/g,' ').trim().slice(0,150);
+  const rawContext=source||reading?.draft?.summary||'Sem conversa anterior registrada';
+  const compactContext=rawContext.replace(/\s+/g,' ').trim().slice(0,260);
   const nextDate=deal?.nextDate?dateLabel(deal.nextDate):'data a combinar';
   const stage=context.stageLabel||deal?.stage||'etapa atual';
   const fromOwner=context.fromOwner||'Responsável anterior',toOwner=context.toOwner||deal?.owner||'Novo responsável';
-  const reason=context.reason?` Motivo: ${context.reason}.`:'';
+  const reason=context.reason||'';
   return{
-    text:`${deal?.client||'Cliente'}: ${deal?.title||'negociação'} de ${moneyLabel(Number(deal?.value)||0)}, em ${stage}. Contexto: ${compactContext}. Próximo passo: ${deal?.next||'definir próxima ação'} em ${nextDate}. ${fromOwner} passou para ${toOwner}.${reason}`,
+    text:[`NEGOCIAÇÃO\n${deal?.client||'Cliente'} · ${deal?.title||'Negociação'} · ${moneyLabel(Number(deal?.value)||0)}`,`ETAPA ATUAL\n${stage}`,`CONTEXTO RECENTE\n${compactContext}`,`PRÓXIMO PASSO\n${deal?.next||'Definir próxima ação'} · ${nextDate}`,`RESPONSABILIDADE\n${fromOwner} passou para ${toOwner}${context.toRole?` (${context.toRole})`:''}`,reason&&`MOTIVO DA TRANSFERÊNCIA\n${reason}`].filter(Boolean).join('\n\n'),
     createdAt:new Date().toISOString(),fromOwner,toOwner,fromRole:context.fromRole||'',toRole:context.toRole||'',reason:context.reason||'',detected:reading?.detected||{}
   };
 }

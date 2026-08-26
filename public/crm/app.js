@@ -347,12 +347,27 @@ function renderPipeline(search=''){
   const activeDeals=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost');
   $('#pipelineTotal').textContent=formatMoney(activeDeals.reduce((sum,deal)=>sum+Number(deal.value||0),0));
   $('#dealCount').textContent=activeDeals.length;
+  renderPipelineValueSummary(deals);
   $('#kanbanBoard').innerHTML=pipelineStages.map(stage=>{
     const stageDeals=visible.filter(deal=>deal.stage===stage.id);
     const total=stageDeals.reduce((sum,deal)=>sum+Number(deal.value),0);
     return `<section class="kanban-column" data-stage="${escapeHtml(stage.id)}"><header class="column-header"><div><i class="stage-dot"></i><h3>${escapeHtml(stage.label)}</h3><span class="column-count">${stageDeals.length}</span></div><span class="column-value">${formatMoney(total)}</span></header><div>${stageDeals.length?stageDeals.map(dealCard).join(''):orbitEmptyState('Etapa livre',`O Orbit avisa quando uma oportunidade estiver pronta para ${escapeHtml(stage.label.toLowerCase())}.`,'empty-column')}</div></section>`;
   }).join('');
   bindDragAndDrop();
+}
+function renderPipelineValueSummary(deals){
+  let summary=$('#pipelineValueSummary');
+  if(!summary){
+    $('#kanbanBoard').insertAdjacentHTML('beforebegin','<section id="pipelineValueSummary" class="pipeline-value-summary" aria-label="Resumo financeiro do funil"></section>');
+    summary=$('#pipelineValueSummary');
+  }
+  const groups=[
+    {label:'Em aberto',tone:'open',items:deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost')},
+    {label:'Ganhou',tone:'won',items:deals.filter(deal=>deal.stage==='won')},
+    {label:'Pós-venda',tone:'after',items:deals.filter(deal=>deal.stage==='after-sales')},
+    {label:'Perdido',tone:'lost',items:deals.filter(deal=>deal.status==='lost'||deal.stage==='lost')}
+  ];
+  summary.innerHTML=groups.map(group=>`<article class="pipeline-value-card ${group.tone}"><small>${group.label}</small><strong>${formatMoney(group.items.reduce((sum,deal)=>sum+Number(deal.value||0),0))}</strong><span>${group.items.length} ${group.items.length===1?'oportunidade':'oportunidades'}</span></article>`).join('');
 }
 function dealsVisibleToCurrentUser(deals){if(!appState.currentUser||appState.currentUser.profile==='Proprietário/Admin'||appState.currentUser.visibility==='all')return deals;return deals.filter(deal=>(deal.owner||'').trim().toLowerCase()===appState.currentUser.name.trim().toLowerCase())}
 
@@ -662,13 +677,18 @@ function getOrbitAttentionItems(){
   deals.filter(deal=>deal.status==='won'&&deal.paymentStatus!=='received').forEach(deal=>items.push({priority:4,type:'Recebimento pendente',title:deal.title||deal.name||'Venda concluída',detail:formatMoney(Math.max(0,(Number(deal.value)||0)-(Number(deal.receivedAmount)||0)))+' ainda não recebido.',target:'receipts'}));
   return items.sort((a,b)=>a.priority-b.priority).slice(0,20);
 }
+const ORBIT_DISMISSED_KEY='niviontech_orbit_dismissed_attention';
+function orbitAttentionFingerprint(item){return [item.type,item.title,item.detail].join('|')}
+function getDismissedOrbitAttention(){try{return JSON.parse(localStorage.getItem(ORBIT_DISMISSED_KEY)||'[]')}catch{return[]}}
+function getVisibleOrbitAttentionItems(){const dismissed=new Set(getDismissedOrbitAttention());return getOrbitAttentionItems().filter(item=>!dismissed.has(orbitAttentionFingerprint(item)))}
+function dismissOrbitAttentionItem(item){const dismissed=getDismissedOrbitAttention(),fingerprint=orbitAttentionFingerprint(item);if(!dismissed.includes(fingerprint))dismissed.push(fingerprint);localStorage.setItem(ORBIT_DISMISSED_KEY,JSON.stringify(dismissed.slice(-100)));refreshOrbitAttention();renderOrbitAttention()}
 
 function refreshOrbitAttention(){
   const trigger=$('#orbitAttentionTrigger');
   if(!trigger)return;
   trigger.hidden=!appState.currentUser;
   if(!appState.currentUser)return;
-  const items=getOrbitAttentionItems();
+  const items=getVisibleOrbitAttentionItems();
   const previousCount=Number(trigger.dataset.previousCount||0);
   const riskCount=items.filter(item=>item.priority===1).length;
   const state=riskCount>=3?'risk':items.length?'attention':'available';
@@ -732,9 +752,10 @@ function renderOrbitAttention(){
   const list=$('#orbitAttentionList');
   if(!list)return;
   renderOrbitContext();
-  const items=getOrbitAttentionItems();
-  list.innerHTML=items.length?items.map((item,index)=>'<button type="button" class="orbit-attention-item priority-'+item.priority+'" data-attention-target="'+item.target+'"><span class="attention-index">'+(index+1)+'</span><span><small>'+item.type+'</small><strong>'+escapeHtml(item.title)+'</strong><p>'+escapeHtml(item.detail)+'</p></span><i>›</i></button>').join(''):'<div class="orbit-attention-empty"><span>✓</span><strong>Tudo sob controle</strong><p>O Orbit não encontrou nenhum ponto urgente agora.</p></div>';
+  const items=getVisibleOrbitAttentionItems();
+  list.innerHTML=items.length?items.map((item,index)=>'<article class="orbit-attention-item priority-'+item.priority+'"><button type="button" class="orbit-attention-main" data-attention-target="'+item.target+'"><span class="attention-index">'+(index+1)+'</span><span><small>'+item.type+'</small><strong>'+escapeHtml(item.title)+'</strong><p>'+escapeHtml(item.detail)+'</p></span><i>›</i></button><button type="button" class="orbit-attention-dismiss" data-attention-dismiss="'+index+'">Dar como visto</button></article>').join(''):'<div class="orbit-attention-empty"><span>✓</span><strong>Tudo sob controle</strong><p>O Orbit não encontrou nenhum ponto urgente agora.</p></div>';
   list.querySelectorAll('[data-attention-target]').forEach(button=>button.addEventListener('click',()=>{closeOrbitAttention();showView(button.dataset.attentionTarget)}));
+  list.querySelectorAll('[data-attention-dismiss]').forEach(button=>button.addEventListener('click',()=>dismissOrbitAttentionItem(items[Number(button.dataset.attentionDismiss)])));
   const summary=$('#orbitAttentionSummary');
   if(summary)summary.textContent=items.length?items.length+' recomendações ordenadas por prioridade':'Seu dia está organizado';
 }
@@ -759,7 +780,7 @@ function closeOrbitAttention(){
 
 function installOrbitAttention(){
   if($('#orbitAttentionTrigger'))return;
-  document.body.insertAdjacentHTML('beforeend','<button type="button" id="orbitAttentionTrigger" class="orbit-attention-trigger" aria-haspopup="dialog" hidden><span class="orbit-attention-orb">O</span><span class="orbit-attention-label">Atenção</span><b id="orbitAttentionCount" hidden>0</b></button><div id="orbitAttentionBackdrop" class="orbit-attention-backdrop"></div><aside id="orbitAttentionPanel" class="orbit-attention-panel" role="dialog" aria-modal="true" aria-labelledby="orbitAttentionTitle"><header><div><small>ORBIT · ASSISTENTE COMERCIAL</small><h2 id="orbitAttentionTitle">Como posso ajudar?</h2><p id="orbitAttentionSummary">Atalhos e prioridades do seu CRM</p></div><button type="button" id="closeOrbitAttention" aria-label="Fechar">×</button></header><section id="orbitContextCard" class="orbit-context-card"><span class="orbit-context-mark">O</span><div><small id="orbitContextEyebrow">ORBIT · CONTEXTO</small><strong id="orbitContextTitle">Leitura da tela atual</strong><p id="orbitContextText"></p><button type="button" id="orbitContextAction">Ver detalhes</button></div></section><section class="orbit-quick-section" aria-labelledby="orbitQuickTitle"><div class="orbit-section-label"><strong id="orbitQuickTitle">Ações rápidas</strong><span>Escolha uma ação</span></div><div class="orbit-quick-actions"><button type="button" data-orbit-command="search"><i>⌕</i><span><strong>Buscar no CRM</strong><small>Clientes, leads e atividades</small></span></button><button type="button" data-orbit-command="deal"><i>↗</i><span><strong>Nova oportunidade</strong><small>Adicionar ao funil</small></span></button><button type="button" data-orbit-command="client"><i>+</i><span><strong>Novo cliente</strong><small>Criar relacionamento</small></span></button><button type="button" data-orbit-command="activity"><i>✓</i><span><strong>Nova atividade</strong><small>Agendar próximo passo</small></span></button><button type="button" data-orbit-command="organize"><i>✦</i><span><strong>Cole e organize</strong><small>Transformar conversa em rascunho</small></span></button><button type="button" data-orbit-command="today"><i>◎</i><span><strong>Ver meu dia</strong><small>Abrir prioridades de hoje</small></span></button></div></section><div class="orbit-section-label orbit-priority-label"><strong>O Orbit recomenda</strong><span>Calculado com seus dados</span></div><div id="orbitAttentionList" class="orbit-attention-list"></div><footer>As recomendações são calculadas localmente com os dados do seu CRM.</footer></aside>');
+  document.body.insertAdjacentHTML('beforeend','<button type="button" id="orbitAttentionTrigger" class="orbit-attention-trigger" aria-haspopup="dialog" hidden><span class="orbit-attention-orb">O</span><b id="orbitAttentionCount" hidden>0</b></button><div id="orbitAttentionBackdrop" class="orbit-attention-backdrop"></div><aside id="orbitAttentionPanel" class="orbit-attention-panel" role="dialog" aria-modal="true" aria-labelledby="orbitAttentionTitle"><header><div><small>ORBIT · ASSISTENTE COMERCIAL</small><h2 id="orbitAttentionTitle">Como posso ajudar?</h2><p id="orbitAttentionSummary">Atalhos e prioridades do seu CRM</p></div><button type="button" id="closeOrbitAttention" aria-label="Fechar">×</button></header><section id="orbitContextCard" class="orbit-context-card"><span class="orbit-context-mark">O</span><div><small id="orbitContextEyebrow">ORBIT · CONTEXTO</small><strong id="orbitContextTitle">Leitura da tela atual</strong><p id="orbitContextText"></p><button type="button" id="orbitContextAction">Ver detalhes</button></div></section><section class="orbit-quick-section" aria-labelledby="orbitQuickTitle"><div class="orbit-section-label"><strong id="orbitQuickTitle">Ações rápidas</strong><span>Escolha uma ação</span></div><div class="orbit-quick-actions"><button type="button" data-orbit-command="search"><i>⌕</i><span><strong>Buscar no CRM</strong><small>Clientes, leads e atividades</small></span></button><button type="button" data-orbit-command="deal"><i>↗</i><span><strong>Nova oportunidade</strong><small>Adicionar ao funil</small></span></button><button type="button" data-orbit-command="client"><i>+</i><span><strong>Novo cliente</strong><small>Criar relacionamento</small></span></button><button type="button" data-orbit-command="activity"><i>✓</i><span><strong>Nova atividade</strong><small>Agendar próximo passo</small></span></button><button type="button" data-orbit-command="organize"><i>✦</i><span><strong>Cole e organize</strong><small>Transformar conversa em rascunho</small></span></button><button type="button" data-orbit-command="today"><i>◎</i><span><strong>Ver meu dia</strong><small>Abrir prioridades de hoje</small></span></button></div></section><div class="orbit-section-label orbit-priority-label"><strong>O Orbit recomenda</strong><span>Calculado com seus dados</span></div><div id="orbitAttentionList" class="orbit-attention-list"></div><footer>As recomendações são calculadas localmente com os dados do seu CRM.</footer></aside>');
   const trigger=$('#orbitAttentionTrigger');
   const positionKey='niviontech_orbit_position';
   const margin=14;
@@ -790,6 +811,7 @@ function installOrbitAttention(){
   };
   trigger.addEventListener('pointerdown',event=>{
     if(event.button!==undefined&&event.button!==0)return;
+    event.preventDefault();
     const rect=trigger.getBoundingClientRect();
     drag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top,moved:false};
     trigger.setPointerCapture?.(event.pointerId);
