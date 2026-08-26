@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260826-3">
+  <link rel="stylesheet" href="styles.css?v=20260826-5">
   <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
   <style>#appScreen h1{font-family:Sora,Inter,sans-serif!important}</style>
   <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
@@ -18,11 +18,18 @@
 <body class="app-booting">
   <main id="authScreen" class="auth-layout">
     <section class="brand-panel">
+      <div class="tech-atmosphere" aria-hidden="true"><i></i><i></i><i></i></div>
       <a class="logo" href="#" aria-label="NivionTech CRM"><span>N</span>NivionTech <b>CRM</b></a>
       <div class="brand-message">
         <p class="overline">SEU COMERCIAL EM MOVIMENTO</p>
         <h1>Comece o dia sabendo exatamente o que fazer.</h1>
         <p>Organize clientes, acompanhe oportunidades e avance cada venda com clareza.</p>
+      </div>
+      <div class="tech-orbit-cards" aria-hidden="true">
+        <article class="tech-card tech-card-priority"><span class="tech-card-icon">O</span><div><small>ORBIT RECOMENDA</small><strong>Comece pela proposta</strong><p>Maior chance de avançar hoje</p></div><b>01</b></article>
+        <article class="tech-card tech-card-pipeline"><span class="tech-card-icon">◇</span><div><small>FUNIL EM MOVIMENTO</small><strong>R$ 27.400</strong><p>4 oportunidades abertas</p></div><em><i></i></em></article>
+        <article class="tech-card tech-card-agenda"><span class="tech-card-icon">↗</span><div><small>PRÓXIMA ATIVIDADE</small><strong>Apresentar proposta</strong><p>Hoje · 10:00</p></div><b class="tech-live-dot"></b></article>
+        <article class="tech-card tech-card-payment"><span class="tech-card-icon">✓</span><div><small>RECEBIMENTO</small><strong>R$ 4.800 confirmado</strong><p>Venda concluída com sucesso</p></div><b>+18%</b></article>
       </div>
       <div class="orbit-signature"><i>O</i><div><strong>Orbit</strong><small>Seu assistente comercial.</small></div></div>
     </section>
