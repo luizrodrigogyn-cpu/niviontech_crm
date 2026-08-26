@@ -684,7 +684,11 @@ $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
 setupJoinTeamFlow();
-bootstrapCloudSync().then(result=>{if(!result.reloading)initialize()});
+bootstrapCloudSync().then(result=>{
+  if(result.reloading)return;
+  initialize();
+  requestAnimationFrame(()=>document.body.classList.remove('app-booting'));
+});
 renderMenuNewBadges();
 function renderRoleFocus(){
   const box=$('#roleFocus');
