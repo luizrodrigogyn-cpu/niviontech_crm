@@ -190,16 +190,16 @@ function setAccessMode(mode,owner=getOwner()){
 
 function initialize(){
   const owner=getOwner();
-  const sessionUser=activeSessionUser();
-  if(sessionUser&&owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
+  if(owner){appState.currentUser=owner;sessionStorage.setItem(SESSION,owner.id);owner.onboardingComplete?openDashboard(owner):openOnboarding();return}
   setScreen('authScreen');
-  setAccessMode(owner?'login':'register',owner);
-  if(owner){
-    $('#accessLabel').textContent='BEM-VINDO DE VOLTA';
-    $('#accessTitle').textContent='Acesse sua empresa';
-    $('#accessDescription').textContent='Entre para continuar seu dia comercial.';
-    $('#ownerEmail').value=owner.email;
-  }
+  setAccessMode('register',null);
+  $('#accessLabel').textContent='ACESSO CHATGPT';
+  $('#accessTitle').textContent='Configure seu perfil';
+  $('#accessDescription').textContent='Seu acesso já foi confirmado pelo ChatGPT. Complete seus dados para iniciar.';
+  $('#passwordGroup').classList.add('hidden');
+  $('#ownerPassword').required=false;
+  $('#accessModeToggle').hidden=true;
+  $('#accessButton').textContent='Continuar';
 }
 
 $('#accessModeToggle').onclick=()=>setAccessMode(accessMode==='login'?'register':'login');
@@ -210,32 +210,26 @@ $('#accessForm').addEventListener('submit',async event=>{
   const message=$('#accessMessage');
   const owner=getOwner();
   const email=$('#ownerEmail').value.trim().toLowerCase();
-  const password=$('#ownerPassword').value;
   message.textContent='';
   button.disabled=true;
-  button.textContent='Validando...';
+  button.textContent='Preparando...';
   button.setAttribute('aria-busy','true');
   try{
-    if(accessMode==='register'&&!owner){
+    if(!owner){
       const name=$('#ownerName').value.trim();
       if(name.length<2)throw new Error('Informe seu nome para continuar.');
-      const salt=createSalt();
-      const record={id:'owner',name,email,salt,passwordHash:await derivePassword(password,salt),role:'Proprietário/Admin',profile:'Proprietário/Admin',visibility:'all',status:'active',onboardingComplete:false,createdAt:new Date().toISOString()};
+      if(!email)throw new Error('Informe seu e-mail para continuar.');
+      const record={id:'owner',name,email,authProvider:'chatgpt',role:'Proprietário/Admin',profile:'Proprietário/Admin',visibility:'all',status:'active',onboardingComplete:false,createdAt:new Date().toISOString()};
       localStorage.setItem(STORAGE.owner,JSON.stringify(record));
       saveUsers([record]);appState.currentUser=record;
       sessionStorage.setItem(SESSION,record.id);
       openOnboarding();
     }else{
-      const user=getUsers().find(item=>item.email.toLowerCase()===email&&item.status!=='inactive');
-      const validPassword=user&&await derivePassword(password,user.salt)===user.passwordHash;
-      if(!user&&!owner)throw new Error('Não encontramos este acesso nesta empresa. Confirme se você entrou com a mesma conta ChatGPT usada anteriormente.');
-      if(!user||!validPassword)throw new Error('E-mail ou senha incorretos, ou acesso inativo.');
-      if(!owner&&user.profile==='Proprietário/Admin')localStorage.setItem(STORAGE.owner,JSON.stringify(user));
-      appState.currentUser=user;sessionStorage.setItem(SESSION,user.id);
-      (owner||user).onboardingComplete?openDashboard(user):openOnboarding();
+      appState.currentUser=owner;sessionStorage.setItem(SESSION,owner.id);
+      owner.onboardingComplete?openDashboard(owner):openOnboarding();
     }
-  }catch(error){message.textContent=error instanceof Error?error.message:'Não foi possível validar o acesso. Tente novamente.'}
-  finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent=accessMode==='login'||owner?'Entrar':'Criar meu acesso'}
+  }catch(error){message.textContent=error instanceof Error?error.message:'Não foi possível preparar o acesso. Tente novamente.'}
+  finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='Continuar'}
 });
 
 const appState={onboardingStep:0,onboardingDraft:{},currentView:'today',currentUser:null,activeClientFilter:'Todos',activeActivityFilter:'pending',activeDealId:null,activeClientId:null,lastMoveAction:null,undoTimer:null,activeProposalFilter:'all',pendingClientMerge:null};
