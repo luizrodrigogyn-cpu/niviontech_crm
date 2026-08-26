@@ -135,12 +135,15 @@ function readSyncMeta(){try{return JSON.parse(localStorage.getItem(SYNC_META_KEY
 function saveSyncMeta(snapshot){const meta={revision:Number(snapshot?.revision||0),fingerprint:snapshotFingerprint(collectSyncStorage(localStorage)),updatedAt:snapshot?.updatedAt||new Date().toISOString()};localStorage.setItem(SYNC_META_KEY,JSON.stringify(meta));return meta}
 function setCloudSyncStatus(status,tone='neutral'){cloudSyncState.status=status;cloudSyncState.tone=tone;const element=$('#cloudSyncStatus');if(element){element.textContent=status;element.dataset.tone=tone}}
 async function cloudSyncRequest(method='GET',body){
-  const response=await fetch('/api/sync',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
-  const data=await response.json().catch(()=>({}));
-  if(response.status===401)return{localOnly:true};
-  if(response.status===409)return{conflict:true,...data};
-  if(!response.ok)throw new Error(data.error||'sync_unavailable');
-  return data;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  try{
+    const response=await fetch('/api/sync',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,signal:controller.signal});
+    const data=await response.json().catch(()=>({}));
+    if(response.status===401)return{localOnly:true};
+    if(response.status===409)return{conflict:true,...data};
+    if(!response.ok)throw new Error(data.error||'sync_unavailable');
+    return data;
+  }finally{clearTimeout(timer)}
 }
 async function uploadCloudSnapshot({force=false}={}){
   if(cloudSyncState.busy)return null;
