@@ -151,13 +151,23 @@ async function flushCloudSync(){
   if(fingerprint!==meta?.fingerprint)await uploadCloudSnapshot();
 }
 function startCloudSyncWatch(){clearInterval(cloudSyncState.timer);cloudSyncState.timer=setInterval(flushCloudSync,3000);window.addEventListener('online',flushCloudSync)}
+const SYNC_RELOAD_GUARD_KEY='niviontech_sync_reload_guard';
+function recentAutoReload(){try{return Date.now()-Number(sessionStorage.getItem(SYNC_RELOAD_GUARD_KEY)||0)<10000}catch{return false}}
+function markAutoReload(){try{sessionStorage.setItem(SYNC_RELOAD_GUARD_KEY,String(Date.now()))}catch{}}
 async function bootstrapCloudSync(){
   try{
     const result=await cloudSyncRequest();
     if(result.localOnly){setCloudSyncStatus('Dados protegidos neste dispositivo','warning');return{reloading:false}}
     cloudSyncState.enabled=true;cloudSyncState.orgId=result.orgId||null;cloudSyncState.role=result.role||null;if(result.inviteCode)cloudSyncState.inviteCode=result.inviteCode;renderTeamInviteCard();
     const localSnapshot=collectSyncStorage(localStorage),decision=resolveStartupSync({localSnapshot,cloudSnapshot:result.snapshot,meta:readSyncMeta()});
-    if(decision.action==='download'){replaceSyncStorage(localStorage,result.snapshot.payload);saveSyncMeta(result.snapshot);location.reload();return{reloading:true}}
+    if(decision.action==='download'){
+      if(recentAutoReload()){
+        saveSyncMeta(result.snapshot);
+        setCloudSyncStatus('Sincronização pausada por segurança. Fale com o suporte se os dados não aparecerem.','warning');
+        startCloudSyncWatch();return{reloading:false};
+      }
+      markAutoReload();replaceSyncStorage(localStorage,result.snapshot.payload);saveSyncMeta(result.snapshot);location.reload();return{reloading:true};
+    }
     if(decision.action==='upload')await uploadCloudSnapshot();
     else if(decision.action==='accept'){saveSyncMeta(result.snapshot);setCloudSyncStatus('Tudo salvo na nuvem privada','success')}
     else if(decision.action==='conflict'){cloudSyncState.conflict=result.snapshot;setCloudSyncStatus('Há duas versões aguardando sua escolha','warning')}

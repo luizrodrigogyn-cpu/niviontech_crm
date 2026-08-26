@@ -38,7 +38,7 @@ export function resolveStartupSync({localSnapshot={},cloudSnapshot=null,meta=nul
   const localFingerprint=snapshotFingerprint(localSnapshot);
   if(!cloudSnapshot)return{action:hasLocalCrmData(localSnapshot)?'upload':'noop',localFingerprint};
   const cloudFingerprint=snapshotFingerprint(cloudSnapshot.payload||{});
-  if(!hasLocalCrmData(localSnapshot))return{action:'download',localFingerprint,cloudFingerprint};
+  if(!hasLocalCrmData(localSnapshot))return{action:hasLocalCrmData(cloudSnapshot.payload||{})?'download':'noop',localFingerprint,cloudFingerprint};
   if(!meta)return{action:localFingerprint===cloudFingerprint?'accept':'conflict',localFingerprint,cloudFingerprint};
   const revision=Number(meta.revision||0),cloudRevision=Number(cloudSnapshot.revision||0);
   if(cloudRevision>revision)return{action:localFingerprint===meta.fingerprint?'download':'conflict',localFingerprint,cloudFingerprint};
