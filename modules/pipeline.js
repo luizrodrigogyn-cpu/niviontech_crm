@@ -1,6 +1,8 @@
 export const pipelineDomain=Object.freeze({name:'pipeline',label:'Funil comercial'});
 export const DEFAULT_STALE_DEAL_DAYS=7;
 export const STALE_DEAL_DAYS_KEY='niviontech_stale_deal_days';
+export const OUTCOME_STAGE_IDS=Object.freeze(['won','after-sales','lost']);
+export function commercialPipelineStages(stages=[]){return stages.filter(stage=>!OUTCOME_STAGE_IDS.includes(stage.id))}
 export function getStaleDealDays(storage=localStorage){const stored=Number(storage.getItem(STALE_DEAL_DAYS_KEY));return Number.isFinite(stored)&&stored>0?Math.round(stored):DEFAULT_STALE_DEAL_DAYS}
 export function saveStaleDealDays(days,storage=localStorage){const normalized=Math.max(1,Math.min(90,Math.round(Number(days)||DEFAULT_STALE_DEAL_DAYS)));storage.setItem(STALE_DEAL_DAYS_KEY,String(normalized));return normalized}
 function interactionTimestamp(value){const timestamp=new Date(value||0).getTime();return Number.isFinite(timestamp)?timestamp:0}
@@ -40,9 +42,15 @@ export function validateNegotiation(deal){
   if(!deal.next||!deal.nextDate)return{valid:false,message:'Toda negociação ativa precisa de próxima ação e data.'};
   return{valid:true,message:''};
 }
-export function applyWonDealRules(deal){
+export function applyWonDealRules(deal,stage='won'){
   deal.status='won';
-  deal.stage='won';
+  deal.stage=stage;
   deal.paymentStatus=deal.paymentStatus||'pending';
+  return deal;
+}
+export function applyLostDealRules(deal,now=new Date()){
+  deal.status='lost';
+  deal.stage='lost';
+  deal.lostAt=now.toISOString();
   return deal;
 }

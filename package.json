@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
-    "start": "vinext start"
+    "start": "vinext start",
+    "test": "node tests/business-rules.test.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

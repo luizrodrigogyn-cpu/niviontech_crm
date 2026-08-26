@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {applyWonDealRules,findStaleDeals,validateNegotiation} from '../modules/pipeline.js';
+import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,validateNegotiation} from '../modules/pipeline.js';
+import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
 import {validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
@@ -34,6 +35,29 @@ test('RB-04: recebimento só é confirmado pela regra financeira',()=>{
   assert.equal(deal.status,'won');
   assert.equal(deal.paymentStatus,'received');
   assert.equal(deal.receivedAmount,5000);
+});
+
+test('etapas de resultado não alteram a progressão comercial',()=>{
+  const stages=[{id:'new'},{id:'proposal'},{id:'won'},{id:'after-sales'},{id:'lost'}];
+  assert.deepEqual(commercialPipelineStages(stages).map(stage=>stage.id),['new','proposal']);
+});
+
+test('perda sincroniza status, etapa e data',()=>{
+  const deal=applyLostDealRules({id:'deal-lost',status:'open',stage:'proposal'},new Date('2026-08-25T15:00:00Z'));
+  assert.equal(deal.status,'lost');
+  assert.equal(deal.stage,'lost');
+  assert.equal(deal.lostAt,'2026-08-25T15:00:00.000Z');
+});
+
+test('venda ganha pode seguir diretamente para o pós-venda',()=>{
+  const deal=applyWonDealRules({id:'deal-after-sales',value:5000},'after-sales');
+  assert.equal(deal.status,'won');
+  assert.equal(deal.stage,'after-sales');
+  assert.equal(deal.paymentStatus,'pending');
+});
+
+test('data do sistema usa o calendário local, não UTC',()=>{
+  assert.equal(todayISO(new Date(2026,7,25,23,30)),'2026-08-25');
 });
 
 test('RB-03: cadastro idêntico aciona aviso de duplicidade',()=>{
