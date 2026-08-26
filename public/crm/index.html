@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111936">
+  <title>NivionTech CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260825-1">
+  <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
+  <style>#appScreen h1{font-family:Sora,Inter,sans-serif!important}</style>
+  <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
+  <style>@media(min-width:761px){#todayView .welcome{align-items:flex-start!important}}</style>
+  <style>@media(min-width:721px){#appScreen.app{align-items:start}#appScreen .sidebar{top:0!important;align-self:start;margin-top:0!important;padding-top:14px}#appScreen .sidebar>.logo{height:62px}#appScreen .workspace{align-self:start}}</style>
+</head>
+<body>
+  <main id="authScreen" class="auth-layout">
+    <section class="brand-panel">
+      <a class="logo" href="#" aria-label="NivionTech CRM"><span>N</span>NivionTech <b>CRM</b></a>
+      <div class="brand-message">
+        <p class="overline">SEU COMERCIAL EM MOVIMENTO</p>
+        <h1>Comece o dia sabendo exatamente o que fazer.</h1>
+        <p>Organize clientes, acompanhe oportunidades e avance cada venda com clareza.</p>
+      </div>
+      <div class="orbit-signature"><i>O</i><div><strong>Orbit</strong><small>Seu assistente comercial.</small></div></div>
+    </section>
+
+    <section class="access-panel">
+      <form id="accessForm" class="access-card">
+        <div class="step-label" id="accessLabel">PRIMEIRO ACESSO</div>
+        <h2 id="accessTitle">Crie o acesso do proprietário</h2>
+        <p id="accessDescription">Você terá controle total das configurações e dos dados comerciais.</p>
+        <label id="nameGroup">Seu nome<input id="ownerName" autocomplete="name" placeholder="Ex.: Rodrigo Melo"></label>
+        <label>E-mail<input id="ownerEmail" type="email" autocomplete="email" placeholder="voce@empresa.com" required></label>
+        <label>Senha<input id="ownerPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Mínimo de 6 caracteres" required></label>
+        <button type="submit" class="primary wide" id="accessButton">Criar meu acesso</button>
+        <p id="accessMessage" class="message" role="alert"></p>
+        <div class="security-note"><span>✓</span><small>Sua senha é protegida e permanece somente neste navegador.</small></div>
+      </form>
+    </section>
+  </main>
+
+  <main id="onboardingScreen" class="onboarding hidden">
+    <header><a class="logo dark" href="#"><span>N</span>NivionTech <b>CRM</b></a><button id="onboardingLogout" class="text-button">Sair</button></header>
+    <section class="onboarding-card">
+      <div class="progress"><i id="progressBar"></i></div>
+      <p class="overline">IMPLANTAÇÃO GUIADA <span id="stepCounter">1 DE 3</span></p>
+      <div id="onboardingContent"></div>
+      <div class="onboarding-actions"><button id="backStep" class="secondary">Voltar</button><button id="nextStep" class="primary">Continuar</button></div>
+    </section>
+    <aside class="orbit-tip"><i>O</i><div><strong>Orbit explica</strong><p id="orbitTipText"></p></div></aside>
+  </main>
+
+  <main id="appScreen" class="app hidden">
+    <aside class="sidebar">
+      <a class="logo" href="#"><span>N</span>NivionTech <b>CRM</b></a>
+      <nav>
+        <button class="active" data-view="today"><i>⌂</i>Hoje</button>
+        <button data-view="pipeline"><i>◇</i>Funil</button>
+        <button data-view="clients"><i>▣</i>Clientes</button>
+        <button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button>
+      </nav>
+      <p class="nav-title">RECEITA</p>
+      <nav><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button><button data-view="reports"><i>⌁</i>Relatórios</button></nav>
+      <p class="nav-title">INTELIGÊNCIA</p>
+      <nav><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
+      <p class="nav-title manager-only">ADMINISTRAÇÃO</p>
+      <nav><button class="manager-only" data-view="team"><i>◎</i>Equipe e acessos</button><button class="admin-only" data-view="templates"><i>▥</i>Modelos de funil</button></nav>
+      <div class="sidebar-footer">
+        <button class="settings" data-view="settings"><i>⚙</i>Configurações</button>
+        <div class="profile"><span id="profileInitial">A</span><div><strong id="profileName">Administrador</strong><small id="profileRole">Proprietário/Admin</small></div><button id="logoutButton" title="Sair">↗</button></div>
+      </div>
+    </aside>
+    <section class="workspace">
+      <header class="topbar"><div><button id="menuButton">☰</button><h2 id="pageTitle">Hoje</h2><small id="pageSubtitle">Seu resumo comercial</small></div><button class="primary" id="newButton">+ Novo</button></header>
+      <div class="dashboard" id="todayView">
+        <div class="welcome"><div><p class="overline">BOM TRABALHO</p><h1 id="welcomeTitle">Olá.</h1><p>Estas são as prioridades para sua empresa vender melhor hoje.</p></div><div class="date-card" style="display:flex;flex-direction:column;align-items:flex-start"><small id="todayWeekday" style="display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase"></small><strong id="todayDate" style="display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance"></strong><div id="dateCardUser" style="width:100%;margin-top:15px;padding-top:12px;border-top:1px solid rgba(69,92,138,.12);color:var(--ink);font-size:11px;font-weight:800"></div></div></div>
+        <section id="roleFocus" class="role-focus"></section>
+        <section class="metrics">
+          <article><small>Atividades pendentes</small><strong id="todayPendingCount">3</strong><span id="todayActivityHint">3 para hoje</span></article>
+          <article><small>Oportunidades abertas</small><strong id="todayOpenDeals">4</strong><span id="todayPipelineValue">R$ 27.400 no funil</span></article>
+          <article><small>Em fechamento</small><strong id="todayClosingValue">R$ 7.900</strong><span>Prioridade comercial</span></article>
+          <article><small>Clientes cadastrados</small><strong id="todayClientsCount">3</strong><span>Base ativa</span></article>
+        </section>
+        <div class="dashboard-grid">
+          <section class="panel"><header><div><h3>O que preciso fazer hoje?</h3><p>Ordenado por prioridade</p></div><button id="todayAddActivity">+ Atividade</button></header><div id="todayTasks"></div></section>
+          <section class="panel orbit-panel"><header><div><h3>Orbit recomenda</h3><p>Leitura rápida do seu dia</p></div><span class="orbit-mini">O</span></header><div class="recommendation"><span>1</span><div><strong>Comece pela proposta</strong><p>A oportunidade Almeida Engenharia está mais próxima de avançar.</p></div></div><div class="recommendation"><span>2</span><div><strong>Não deixe o lead esfriar</strong><p>Faça o retorno para Café do Cerrado ainda hoje.</p></div></div><button class="orbit-button">Conversar com Orbit</button></section>
+        </div>
+      </div>
+      <div class="pipeline-view hidden" id="pipelineView">
+        <div class="pipeline-heading">
+          <div><p class="overline">VISÃO COMERCIAL</p><h1>Funil de vendas</h1><p>Acompanhe e arraste cada oportunidade até o fechamento.</p></div>
+          <div class="pipeline-summary"><small>VALOR TOTAL DO FUNIL</small><strong id="pipelineTotal">R$ 0</strong></div>
+        </div>
+        <div class="pipeline-toolbar"><label>⌕<input id="dealSearch" placeholder="Buscar oportunidade ou cliente"></label><span><b id="dealCount">0</b> oportunidades abertas</span></div>
+        <div class="kanban" id="kanbanBoard"></div>
+      </div>
+      <div class="clients-view hidden" id="clientsView">
+        <div class="clients-heading">
+          <div><p class="overline">RELACIONAMENTOS</p><h1>Clientes e empresas</h1><p>Informações importantes organizadas em uma única visão.</p></div>
+          <div class="clients-summary"><small>BASE CADASTRADA</small><strong id="clientsTotal">0 empresas</strong></div>
+        </div>
+        <div class="clients-toolbar"><label>⌕<input id="clientSearch" placeholder="Buscar empresa, segmento ou cidade"></label><div class="client-tabs"><button class="active" data-client-filter="Todos">Todos</button><button data-client-filter="Cliente">Clientes</button><button data-client-filter="Prospect">Prospects</button></div></div>
+        <div class="clients-grid" id="clientsGrid"></div>
+      </div>
+      <div class="activities-view hidden" id="activitiesView">
+        <div class="activities-heading">
+          <div><p class="overline">ROTINA COMERCIAL</p><h1>Atividades e agenda</h1><p>Organize retornos, reuniões e tarefas sem perder o próximo passo.</p></div>
+          <div class="activities-summary"><small>PENDENTES</small><strong id="pendingActivities">0 atividades</strong></div>
+        </div>
+        <div class="activities-toolbar"><div class="activity-tabs"><button class="active" data-activity-filter="pending">Pendentes</button><button data-activity-filter="today">Hoje</button><button data-activity-filter="done">Concluídas</button><button data-activity-filter="all">Todas</button></div><label>⌕<input id="activitySearch" placeholder="Buscar atividade ou cliente"></label></div>
+        <div class="agenda-layout"><section class="agenda-list" id="activitiesList"></section><aside class="agenda-orbit"><span class="orbit-mini">O</span><p class="overline">ORBIT OBSERVA</p><h3 id="agendaInsight">Sua agenda está organizada.</h3><p id="agendaInsightText">Continue registrando os próximos passos das oportunidades.</p><button data-view="pipeline">Ver oportunidades</button></aside></div>
+      </div>
+      <div class="module-view hidden" id="organizeView">
+        <div class="module-heading"><div><p class="overline">ORBIT · ASSISTENTE LOCAL</p><h1>Cole e organize</h1><p>Cole uma conversa. O Orbit prepara um rascunho para você revisar antes de salvar.</p></div><span class="local-badge">Processamento local</span></div>
+        <div class="organize-layout"><section class="organize-input panel-card"><label>Conversa ou anotação<textarea id="conversationText" placeholder="Ex.: João da Empresa Sol pediu orçamento de R$ 8.500 para instalação. Retornar sexta-feira às 10h..."></textarea></label><div class="privacy-line"><span>✓</span> O texto não sai deste navegador.</div><button id="analyzeConversation" class="primary wide">Preparar rascunho</button></section><section class="organize-draft panel-card"><div class="draft-placeholder" id="draftPlaceholder"><span class="orbit-large">O</span><h3>O rascunho aparecerá aqui</h3><p>Nenhum dado será criado sem sua confirmação.</p></div><div id="organizeConfirmation" class="organize-confirmation hidden"><span class="orbit-large">O</span><p class="overline">ORBIT ENTENDEU</p><h3 id="organizeConfirmationText"></h3><div id="organizeSignals" class="organize-signals"></div><small>Nada foi salvo. Confirme para abrir o rascunho editável.</small><div><button id="reviseOrganizeReading" type="button" class="secondary">Revisar texto</button><button id="confirmOrganizeReading" type="button" class="primary">Sim, preparar rascunho</button></div></div><form id="organizeDraft" class="hidden"><div class="draft-head"><div><p class="overline">RASCUNHO EDITÁVEL</p><h3>Revise antes de confirmar</h3></div><span>Não salvo</span></div><label>Cliente ou empresa<input name="client" required></label><label>Oportunidade<input name="title" required></label><div class="draft-grid"><label>Valor estimado<input name="value" type="number" min="0" step="0.01"></label><label>Etapa<select name="stage"><option value="new">Novo lead</option><option value="qualified">Qualificado</option><option value="proposal">Proposta</option></select></label></div><label>Próxima ação<input name="next" required></label><div class="draft-grid"><label>Data<input name="date" type="date" required></label><label>Horário<input name="time" type="time" required></label></div><div class="draft-grid"><div class="detected-phone-note">Telefone confirmado no resumo do Orbit</div><label>Urgência<select name="urgency"><option value="normal">Normal</option><option value="attention">Atenção</option><option value="high">Alta</option></select></label></div><input name="email" type="hidden"><label>Resumo<textarea name="summary"></textarea></label><button class="primary wide" type="submit">Confirmar e criar no CRM</button></form></section></div>
+      </div>
+      <div class="module-view hidden" id="rankingView">
+        <div class="module-heading ranking-heading"><div><p class="overline">PERFORMANCE POR META</p><h1>Ranking comercial</h1><p>Comparação justa pelo percentual atingido, nunca pelo valor bruto.</p></div><div class="module-summary"><small>META DA EQUIPE</small><strong id="rankingTeamPercent">0%</strong></div></div>
+        <section class="ranking-controls panel-card"><label>Período<input id="rankingPeriod" type="month"></label><label id="rankingVisibilityControl" class="ranking-visibility"><span><strong>Ranking público</strong><small id="rankingVisibilityText">Visível somente para gestores</small></span><input id="rankingPublicToggle" type="checkbox"><i></i></label></section>
+        <section id="rankingList" class="ranking-list"></section>
+      </div>
+      <div class="module-view hidden" id="proposalsView">
+        <div class="module-heading"><div><p class="overline">NEGOCIAÇÃO</p><h1>Propostas</h1><p>Acompanhe cada oferta do rascunho até a decisão do cliente.</p></div><div class="module-summary"><small>VALOR EM PROPOSTAS</small><strong id="proposalsTotal">R$ 0</strong></div></div>
+        <div class="module-toolbar"><label>⌕<input id="proposalSearch" placeholder="Buscar proposta ou cliente"></label><div class="status-filters"><button class="active" data-proposal-filter="all">Todas</button><button data-proposal-filter="draft">Rascunhos</button><button data-proposal-filter="sent">Enviadas</button><button data-proposal-filter="approved">Aprovadas</button></div></div><div class="records-list" id="proposalsList"></div>
+      </div>
+      <div class="module-view hidden" id="receiptsView">
+        <div class="module-heading"><div><p class="overline">DA VENDA AO DINHEIRO</p><h1>Recebimentos</h1><p>Venda ganha e pagamento recebido continuam sendo estados separados.</p></div><div class="module-summary"><small>A RECEBER</small><strong id="amountPending">R$ 0</strong></div></div>
+        <section class="receipt-metrics"><article><small>VENDIDO</small><strong id="amountSold">R$ 0</strong></article><article><small>RECEBIDO</small><strong id="amountReceived">R$ 0</strong></article><article><small>EM ABERTO</small><strong id="amountOpen">R$ 0</strong></article></section><div class="records-list" id="receiptsList"></div>
+      </div>
+      <div class="module-view hidden" id="reportsView">
+        <div class="module-heading"><div><p class="overline">DECISÕES COM CLAREZA</p><h1>Relatórios essenciais</h1><p>Indicadores simples para entender vendas, recebimentos e pontos de atenção.</p></div><div class="module-summary"><small>PREVISÃO DO FUNIL</small><strong id="forecastValue">R$ 0</strong></div></div>
+        <section class="report-metrics"><article><small>FUNIL ABERTO</small><strong id="reportPipeline">R$ 0</strong><span id="reportOpenCount">0 oportunidades</span></article><article><small>VENDAS GANHAS</small><strong id="reportWon">R$ 0</strong><span id="reportWonCount">0 vendas</span></article><article><small>RECEBIDO</small><strong id="reportReceived">R$ 0</strong><span id="reportReceivedRate">0% das vendas</span></article><article><small>CONVERSÃO</small><strong id="reportConversion">0%</strong><span>ganhas sobre decisões</span></article></section>
+        <div class="reports-grid"><section class="panel-card"><div class="report-title"><div><h3>Distribuição do funil</h3><p>Valor e volume por etapa</p></div></div><div id="stageChart" class="stage-chart"></div></section><section class="panel-card"><div class="report-title"><div><h3>Orbit destaca</h3><p>Recomendações baseadas nos dados locais</p></div><span class="orbit-mini">O</span></div><div id="reportInsights" class="report-insights"></div></section></div>
+      </div>
+      <div class="module-view hidden" id="settingsView">
+        <div class="module-heading"><div><p class="overline">CONTROLE E PORTABILIDADE</p><h1>Configurações</h1><p>Seus dados permanecem sob seu controle.</p></div></div>
+        <div class="settings-grid"><section class="panel-card"><h3>Empresa</h3><div id="companySettings" class="settings-data"></div></section><section class="panel-card"><h3>Ritmo comercial</h3><p>Depois deste período sem interação, o Orbit traz a negociação de volta para a tela Hoje.</p><label class="stale-days-setting">Dias sem interação<input id="staleDealDays" type="number" min="1" max="90" step="1" value="7"><small>Salvo somente neste navegador.</small></label></section><section class="panel-card"><h3>Cópia de segurança</h3><p>Exporte todos os dados em formato aberto para guardar uma cópia local.</p><button id="exportBackup" class="primary wide">Exportar backup JSON</button><button id="exportClientsCsv" class="secondary wide">Exportar clientes CSV</button></section><section class="panel-card"><h3>Perfis comerciais</h3><p>O modelo já está preparado para crescimento da equipe.</p><div class="role-list"><span>Proprietário/Admin <b>Ativo</b></span><span>Colaborador comercial <b>Disponível</b></span><span>Gestor, SDR, Executivo e Pós-venda <b>Estruturados</b></span></div></section></div>
+      </div>
+      <div class="module-view hidden" id="teamView">
+        <div class="module-heading"><div><p class="overline">PESSOAS E RESPONSABILIDADES</p><h1>Equipe e acessos</h1><p>Comece simples e separe os papéis conforme a empresa crescer.</p></div><div class="module-summary"><small>USUÁRIOS ATIVOS</small><strong id="activeUsersCount">1 usuário</strong></div></div>
+        <div class="role-explanation"><span class="orbit-mini">O</span><div><strong>Modelo progressivo</strong><p>Na pequena empresa, o Colaborador comercial acumula SDR, Executivo e Pós-venda. Os papéis especializados já ficam preparados no modelo.</p></div></div>
+        <div class="team-grid" id="teamGrid"></div>
+        <section class="roles-map"><h3>Papéis estruturais</h3><div><article><b>Proprietário/Admin</b><p>Acesso total, configurações e financeiro.</p></article><article><b>Gestor Comercial</b><p>Visão de todo o funil e da equipe.</p></article><article><b>SDR</b><p>Qualificação e etapas iniciais.</p></article><article><b>Executivo de Contas</b><p>Negociação, proposta e fechamento.</p></article><article><b>Pós-venda</b><p>Cliente 360°, recebimento e relacionamento.</p></article></div></section>
+      </div>
+      <div class="module-view hidden" id="templatesView">
+        <div class="module-heading"><div><p class="overline">IMPLANTAÇÃO PROGRESSIVA</p><h1>Modelos de funil</h1><p>Escolha um processo próximo da sua realidade e ajuste conforme a empresa amadurecer.</p></div><div class="module-summary"><small>MODELO ATUAL</small><strong id="currentTemplateName">Funil essencial</strong></div></div>
+        <div class="template-grid" id="templateGrid"></div>
+        <section class="current-pipeline"><div><p class="overline">ETAPAS ATIVAS</p><h3>Seu processo comercial atual</h3></div><div id="activeStagesPreview" class="stages-preview"></div></section>
+      </div>
+    </section>
+  </main>
+
+  <div id="dealModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <form id="dealForm" class="modal-card">
+      <header><div><p class="overline">NOVA VENDA</p><h2>Criar oportunidade</h2></div><button type="button" data-close-modal>×</button></header>
+      <div class="deal-form-grid">
+        <label class="full-field">Nome da oportunidade<input name="title" placeholder="Ex.: Implantação do sistema" required></label>
+        <label>Empresa ou cliente<input name="client" placeholder="Ex.: Almeida Engenharia" required></label>
+        <label>Valor estimado<input name="value" type="number" min="0" step="0.01" placeholder="0,00" required></label>
+        <label>Etapa inicial<select name="stage"><option value="new">Novo lead</option><option value="qualified">Qualificado</option><option value="proposal">Proposta</option><option value="closing">Fechamento</option></select></label>
+        <label>Responsável<input name="owner" id="dealOwner" required></label>
+        <label>Próximo passo<input name="next" placeholder="Ex.: Ligar amanhã" required></label><label>Data da próxima ação<input name="nextDate" id="dealNextDate" type="date" required></label>
+      </div>
+      <footer><button type="button" class="secondary" data-close-modal>Cancelar</button><button type="submit" class="primary">Salvar oportunidade</button></footer>
+    </form>
+  </div>
+
+  <div id="clientModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-client-modal></div>
+    <form id="clientForm" class="modal-card">
+      <header><div><p class="overline">NOVO RELACIONAMENTO</p><h2>Cadastrar empresa</h2></div><button type="button" data-close-client-modal>×</button></header>
+      <div class="deal-form-grid">
+        <label class="full-field">Nome da empresa<input name="name" placeholder="Ex.: Almeida Engenharia" required></label>
+        <label>Segmento<input name="segment" placeholder="Ex.: Construção" required></label>
+        <label>Status<select name="status"><option value="Prospect">Prospect</option><option value="Cliente">Cliente</option></select></label>
+        <label>Cidade / Estado<input name="city" placeholder="Ex.: Goiânia, GO" required></label>
+        <label>Telefone<input name="phone" placeholder="(00) 00000-0000"></label>
+        <label class="full-field">E-mail<input name="email" type="email" placeholder="contato@empresa.com.br"></label>
+      </div>
+      <footer><button type="button" class="secondary" data-close-client-modal>Cancelar</button><button type="submit" class="primary">Salvar empresa</button></footer>
+    </form>
+  </div>
+
+  <div id="activityModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-activity-modal></div>
+    <form id="activityForm" class="modal-card">
+      <header><div><p class="overline">NOVO PRÓXIMO PASSO</p><h2>Criar atividade</h2></div><button type="button" data-close-activity-modal>×</button></header>
+      <div class="deal-form-grid">
+        <label class="full-field">O que precisa ser feito?<input name="title" placeholder="Ex.: Apresentar proposta comercial" required></label>
+        <label>Tipo<select name="type"><option>Ligação</option><option>Reunião</option><option>Tarefa</option><option>WhatsApp</option><option>E-mail</option></select></label>
+        <label>Cliente ou empresa<input name="client" placeholder="Ex.: Almeida Engenharia" required></label>
+        <label>Data<input name="date" id="activityDate" type="date" required></label>
+        <label>Horário<input name="time" type="time" required></label>
+        <label class="full-field">Observação<input name="note" placeholder="Informação importante para realizar a atividade"></label>
+      </div>
+      <footer><button type="button" class="secondary" data-close-activity-modal>Cancelar</button><button type="submit" class="primary">Salvar atividade</button></footer>
+    </form>
+  </div>
+  <div id="proposalModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-proposal-modal></div><form id="proposalForm" class="modal-card"><header><div><p class="overline">NOVA OFERTA</p><h2>Criar proposta</h2></div><button type="button" data-close-proposal-modal>×</button></header><div class="deal-form-grid"><label class="full-field">Título da proposta<input name="title" required></label><label>Cliente<input name="client" required></label><label>Oportunidade<select name="dealId" id="proposalDeal"></select></label><label>Valor<input name="value" type="number" min="0" step="0.01" required></label><label>Validade<input name="validUntil" type="date" required></label><label>Status<select name="status"><option value="draft">Rascunho</option><option value="sent">Enviada</option><option value="approved">Aprovada</option><option value="refused">Recusada</option></select></label><label class="full-field">Observações<input name="notes"></label></div><footer><button type="button" class="secondary" data-close-proposal-modal>Cancelar</button><button class="primary" type="submit">Salvar proposta</button></footer></form></div>
+  <div id="receiptModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-receipt-modal></div><form id="receiptForm" class="modal-card"><header><div><p id="receiptModalEyebrow" class="overline">ATUALIZAR PAGAMENTO</p><h2 id="receiptModalTitle">Recebimento</h2><p id="receiptModalPrompt" class="receipt-modal-prompt"></p></div><button type="button" data-close-receipt-modal>×</button></header><input type="hidden" name="dealId"><div class="deal-form-grid"><label>Valor previsto<input name="total" type="number" min="0" step="0.01" required></label><label>Valor recebido<input name="received" type="number" min="0" step="0.01" required></label><label>Vencimento<input name="dueDate" type="date" required></label><label>Status<select name="status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="received">Recebido</option></select></label></div><footer><button type="button" class="secondary" data-close-receipt-modal>Salvar depois</button><button class="primary" type="submit">Salvar recebimento</button></footer></form></div>
+  <div id="microCelebration" class="micro-celebration" aria-live="polite" aria-hidden="true"><div class="celebration-ripple"></div><div class="celebration-ripple second"></div><div class="celebration-symbol"></div><div><strong id="celebrationTitle"></strong><span id="celebrationMessage"></span></div></div>
+  <div id="userModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-user-modal></div><form id="userForm" class="modal-card"><header><div><p class="overline">NOVO ACESSO LOCAL</p><h2>Adicionar colaborador</h2></div><button type="button" data-close-user-modal>×</button></header><div class="deal-form-grid"><label>Nome completo<input name="name" required></label><label>E-mail<input name="email" type="email" required></label><label>Senha inicial<input name="password" type="password" minlength="6" required></label><label>Perfil ativo<select name="profile"><option>Colaborador comercial</option><option>Gestor Comercial</option><option>SDR</option><option>Executivo de Contas</option><option>Pós-venda</option></select></label><label>Visibilidade<select name="visibility"><option value="own">Somente carteira própria</option><option value="all">Todo o funil</option></select></label><label>Status<select name="status"><option value="active">Ativo</option><option value="inactive">Inativo</option></select></label></div><footer><button type="button" class="secondary" data-close-user-modal>Cancelar</button><button class="primary" type="submit">Criar acesso</button></footer></form></div>
+
+  <div id="dealDrawer" class="drawer hidden" aria-hidden="true">
+    <div class="drawer-backdrop" data-close-drawer></div>
+    <aside class="drawer-panel">
+      <header class="drawer-header"><div><p class="overline">OPORTUNIDADE 360°</p><h2 id="drawerDealTitle">Oportunidade</h2><p id="drawerDealClient">Cliente</p></div><button data-close-drawer>×</button></header>
+      <div class="deal-stage-track" id="dealStageTrack"></div>
+      <section class="deal-detail-section">
+        <div class="detail-section-title"><h3>Dados comerciais</h3><span id="drawerDealStatus" class="deal-status">Em andamento</span></div>
+        <div class="detail-form-grid"><label>Valor estimado<input id="drawerDealValue" type="number" min="0" step="0.01"></label><label>Responsável<input id="drawerDealOwner"></label><label>Papel atual<select id="drawerDealRole"><option>Proprietário/Admin</option><option>Colaborador comercial</option><option>Gestor Comercial</option><option>SDR</option><option>Executivo de Contas</option><option>Pós-venda</option></select></label><label>Motivo da transferência<input id="drawerTransferReason" placeholder="Opcional"></label><label>Próximo passo<input id="drawerDealNext"></label><label>Data da próxima ação<input id="drawerDealNextDate" type="date"></label></div>
+        <button id="saveDealDetails" class="secondary wide">Salvar alterações</button>
+      </section>
+      <section class="deal-detail-section money-section"><div class="detail-section-title"><h3>Da conversa ao dinheiro</h3><span id="paymentBadge" class="payment-badge">Aguardando fechamento</span></div><p>Registre o resultado da negociação e acompanhe até o recebimento.</p><div class="money-actions"><button id="markWon" class="primary">Marcar como ganha</button><button id="markLost" class="secondary danger-action">Marcar como perdida</button><button id="markReceived" class="secondary">Confirmar recebimento</button></div></section>
+      <section class="deal-detail-section"><div class="detail-section-title"><h3>Histórico</h3><small>Auditoria comercial</small></div><div id="dealHistory" class="deal-history"></div></section>
+    </aside>
+  </div>
+
+  <div id="clientDrawer" class="drawer hidden" aria-hidden="true">
+    <div class="drawer-backdrop" data-close-client-drawer></div>
+    <aside class="drawer-panel client-drawer-panel">
+      <header class="drawer-header"><div><p class="overline">CLIENTE 360°</p><h2 id="drawerClientName">Empresa</h2><p id="drawerClientSegment">Segmento</p></div><button data-close-client-drawer>×</button></header>
+      <section class="client-profile-card"><span class="company-avatar" id="drawerClientInitial">E</span><div><span id="drawerClientStatus" class="client-status">Cliente</span><h3 id="drawerClientLocation">Cidade</h3><p id="drawerClientContact">Telefone · E-mail</p></div></section>
+      <section class="client-360-metrics"><article><small>OPORTUNIDADES</small><strong id="clientDealsCount">0</strong></article><article><small>VALOR EM NEGOCIAÇÃO</small><strong id="clientDealsValue">R$ 0</strong></article><article><small>ATIVIDADES PENDENTES</small><strong id="clientActivitiesCount">0</strong></article></section>
+      <section class="deal-detail-section"><div class="detail-section-title"><h3>Oportunidades relacionadas</h3><small>Funil comercial</small></div><div id="clientDealsList" class="related-list"></div></section>
+      <section class="deal-detail-section"><div class="detail-section-title"><h3>Linha do tempo</h3><small>Histórico unificado</small></div><div id="clientTimeline" class="deal-history"></div></section>
+      <form id="interactionForm" class="interaction-form"><label>Registrar interação<input name="text" placeholder="Ex.: Cliente pediu retorno na sexta-feira" required></label><button class="primary" type="submit">Adicionar ao histórico</button></form>
+    </aside>
+  </div>
+  <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
+  <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
+<script type="module" src="app.js?v=20260825-28"></script>
+</body>
+</html>

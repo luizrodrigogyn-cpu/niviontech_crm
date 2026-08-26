@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body, .crm-shell { width: 100%; min-height: 100%; margin: 0; }
+body { overflow: hidden; background: #eef1f5; }
+.crm-shell { height: 100vh; }
+.crm-shell iframe { display: block; width: 100%; height: 100%; border: 0; }
