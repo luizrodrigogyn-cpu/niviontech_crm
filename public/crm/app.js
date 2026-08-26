@@ -166,20 +166,35 @@ function installCloudSyncPanel(){
   $('#syncNow').onclick=()=>uploadCloudSnapshot();$('#useDeviceSnapshot').onclick=useDeviceSnapshot;$('#useCloudSnapshot').onclick=useCloudSnapshot;updateCloudSyncPanel();
 }
 
+let accessMode='register';
+function setAccessMode(mode,owner=getOwner()){
+  accessMode=owner?'login':mode;
+  const isLogin=accessMode==='login';
+  $('#accessLabel').textContent=isLogin?'ACESSO EXISTENTE':'PRIMEIRO ACESSO';
+  $('#accessTitle').textContent=isLogin?'Entre no NivionTech CRM':'Crie o acesso do proprietário';
+  $('#accessDescription').textContent=isLogin?'Use o e-mail e a senha que você já cadastrou.':'Você terá controle total das configurações e dos dados comerciais.';
+  $('#nameGroup').classList.toggle('hidden',isLogin);
+  $('#accessButton').textContent=isLogin?'Entrar':'Criar meu acesso';
+  $('#accessModeToggle').textContent=isLogin?'Ainda não tenho acesso · Criar conta':'Já tenho acesso · Entrar';
+  $('#accessModeToggle').hidden=Boolean(owner);
+  $('#accessMessage').textContent='';
+}
+
 function initialize(){
   const owner=getOwner();
   const sessionUser=activeSessionUser();
   if(sessionUser&&owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
   setScreen('authScreen');
+  setAccessMode(owner?'login':'register',owner);
   if(owner){
     $('#accessLabel').textContent='BEM-VINDO DE VOLTA';
     $('#accessTitle').textContent='Acesse sua empresa';
     $('#accessDescription').textContent='Entre para continuar seu dia comercial.';
-    $('#nameGroup').classList.add('hidden');
     $('#ownerEmail').value=owner.email;
-    $('#accessButton').textContent='Entrar';
   }
 }
+
+$('#accessModeToggle').onclick=()=>setAccessMode(accessMode==='login'?'register':'login');
 
 $('#accessForm').addEventListener('submit',async event=>{
   event.preventDefault();
@@ -192,7 +207,7 @@ $('#accessForm').addEventListener('submit',async event=>{
   button.disabled=true;
   button.textContent='Validando...';
   try{
-    if(!owner){
+    if(accessMode==='register'&&!owner){
       const name=$('#ownerName').value.trim();
       if(name.length<2)throw new Error('Informe seu nome para continuar.');
       const salt=createSalt();
@@ -204,12 +219,14 @@ $('#accessForm').addEventListener('submit',async event=>{
     }else{
       const user=getUsers().find(item=>item.email.toLowerCase()===email&&item.status!=='inactive');
       const validPassword=user&&await derivePassword(password,user.salt)===user.passwordHash;
+      if(!user&&!owner)throw new Error('Não encontramos este acesso nesta empresa. Confirme se você entrou com a mesma conta ChatGPT usada anteriormente.');
       if(!user||!validPassword)throw new Error('E-mail ou senha incorretos, ou acesso inativo.');
+      if(!owner&&user.profile==='Proprietário/Admin')localStorage.setItem(STORAGE.owner,JSON.stringify(user));
       appState.currentUser=user;sessionStorage.setItem(SESSION,user.id);
-      owner.onboardingComplete?openDashboard(user):openOnboarding();
+      (owner||user).onboardingComplete?openDashboard(user):openOnboarding();
     }
   }catch(error){message.textContent=error.message}
-  finally{button.disabled=false;button.textContent=owner?'Entrar':'Criar meu acesso'}
+  finally{button.disabled=false;button.textContent=accessMode==='login'||owner?'Entrar':'Criar meu acesso'}
 });
 
 const appState={onboardingStep:0,onboardingDraft:{},currentView:'today',currentUser:null,activeClientFilter:'Todos',activeActivityFilter:'pending',activeDealId:null,activeClientId:null,lastMoveAction:null,undoTimer:null,activeProposalFilter:'all',pendingClientMerge:null};
