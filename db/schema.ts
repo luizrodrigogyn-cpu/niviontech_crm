@@ -1,9 +1,23 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
-export const crmSnapshots=sqliteTable('crm_snapshots',{
-  userId:text('user_id').primaryKey(),
+// Um registro por ORGANIZAÇÃO (empresa), não por usuário autenticado individual.
+// Todos os membros da mesma empresa leem/escrevem o mesmo snapshot.
+export const crmOrgs=sqliteTable('crm_orgs',{
+  orgId:text('org_id').primaryKey(),
   payload:text('payload').notNull(),
   revision:integer('revision').notNull().default(1),
   updatedAt:text('updated_at').notNull(),
   deviceId:text('device_id').notNull(),
+  inviteCode:text('invite_code').notNull(),
+},table=>({
+  inviteCodeIdx:uniqueIndex('crm_orgs_invite_code_idx').on(table.inviteCode),
+}));
+
+// Liga cada usuário autenticado (identidade da plataforma) a uma organização.
+// Um usuário pertence a no máximo uma organização nesta versão.
+export const crmOrgMembers=sqliteTable('crm_org_members',{
+  userId:text('user_id').primaryKey(),
+  orgId:text('org_id').notNull(),
+  role:text('role').notNull().default('member'), // 'owner' | 'member'
+  joinedAt:text('joined_at').notNull(),
 });

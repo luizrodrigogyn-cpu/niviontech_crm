@@ -96,3 +96,11 @@ button:not(.icon-button):not(.edit-card-title):not(.temperature-trigger),input,s
 .ranking-recognition{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.ranking-recognition>small{color:#78849a;font-size:9px}.recognition-badge{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid rgba(37,65,116,.12);border-radius:99px;background:rgba(231,238,251,.74);color:#29477b;font-size:8.5px;font-weight:800;white-space:nowrap}.recognition-badge.milestone-75{border-color:rgba(179,126,34,.18);background:rgba(255,244,214,.78);color:#9a6504}.recognition-badge.milestone-100{border-color:rgba(33,139,83,.18);background:rgba(226,247,235,.82);color:#197a45}.recognition-badge.streak{border-color:rgba(67,92,148,.17);background:linear-gradient(135deg,rgba(230,238,253,.86),rgba(243,247,255,.68));color:#34578f}@media(max-width:520px){.ranking-recognition{grid-column:1/-1}.recognition-badge{font-size:9px}}
 .date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
 .date-card #todayDate{display:block;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}
+
+/* Sincronização por organização — convite de equipe */
+.join-team-toggle{text-align:center;margin-top:6px}
+.join-team-toggle .text-button{font-weight:600;font-size:13px;text-decoration:underline}
+.team-invite-card{margin-bottom:18px}
+.invite-code-row{display:flex;align-items:center;gap:12px;margin-top:10px}
+.invite-code-row code{font-size:20px;font-weight:800;letter-spacing:.06em;background:var(--soft);padding:10px 16px;border-radius:10px;border:1px solid var(--line)}
+#teamInviteHint{color:var(--muted);display:block;margin-top:8px}

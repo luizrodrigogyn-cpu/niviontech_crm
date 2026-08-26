@@ -103,7 +103,7 @@ function activeSessionUser(){const id=sessionStorage.getItem(SESSION);const user
 function createSalt(){return crypto.getRandomValues(new Uint32Array(4)).join('-')}
 function setScreen(name){['authScreen','onboardingScreen','appScreen'].forEach(id=>$('#'+id).classList.toggle('hidden',id!==name))}
 
-const cloudSyncState={enabled:false,busy:false,conflict:null,timer:null,status:'Conectando à proteção privada...',tone:'neutral'};
+const cloudSyncState={enabled:false,busy:false,conflict:null,timer:null,status:'Conectando à proteção privada...',tone:'neutral',orgId:null,role:null,inviteCode:null};
 function syncDeviceId(){let id=localStorage.getItem(SYNC_DEVICE_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(SYNC_DEVICE_KEY,id)}return id}
 function readSyncMeta(){try{return JSON.parse(localStorage.getItem(SYNC_META_KEY))}catch{return null}}
 function saveSyncMeta(snapshot){const meta={revision:Number(snapshot?.revision||0),fingerprint:snapshotFingerprint(collectSyncStorage(localStorage)),updatedAt:snapshot?.updatedAt||new Date().toISOString()};localStorage.setItem(SYNC_META_KEY,JSON.stringify(meta));return meta}
@@ -137,7 +137,7 @@ async function bootstrapCloudSync(){
   try{
     const result=await cloudSyncRequest();
     if(result.localOnly){setCloudSyncStatus('Dados protegidos neste dispositivo','warning');return{reloading:false}}
-    cloudSyncState.enabled=true;
+    cloudSyncState.enabled=true;cloudSyncState.orgId=result.orgId||null;cloudSyncState.role=result.role||null;if(result.inviteCode)cloudSyncState.inviteCode=result.inviteCode;renderTeamInviteCard();
     const localSnapshot=collectSyncStorage(localStorage),decision=resolveStartupSync({localSnapshot,cloudSnapshot:result.snapshot,meta:readSyncMeta()});
     if(decision.action==='download'){replaceSyncStorage(localStorage,result.snapshot.payload);saveSyncMeta(result.snapshot);location.reload();return{reloading:true}}
     if(decision.action==='upload')await uploadCloudSnapshot();
@@ -162,11 +162,65 @@ function installCloudSyncPanel(){
   $('#syncNow').onclick=()=>uploadCloudSnapshot();$('#useDeviceSnapshot').onclick=useDeviceSnapshot;$('#useCloudSnapshot').onclick=useCloudSnapshot;updateCloudSyncPanel();
 }
 
+function installTeamInviteCard(){
+  const grid=$('#teamGrid');
+  if(!grid||$('#teamInviteCard'))return;
+  grid.insertAdjacentHTML('beforebegin','<section id="teamInviteCard" class="panel-card team-invite-card"><h3>Convite da equipe</h3><p>Compartilhe este código para que um colega entre com os mesmos clientes, negociações e atividades da empresa, em qualquer dispositivo.</p><div class="invite-code-row"><code id="teamInviteCode">••••-••••</code><button type="button" id="copyInviteCode" class="secondary">Copiar código</button></div><small id="teamInviteHint"></small></section>');
+  $('#copyInviteCode').onclick=async()=>{
+    const code=cloudSyncState.inviteCode;if(!code)return;
+    try{await navigator.clipboard.writeText(code)}catch{}
+    const button=$('#copyInviteCode');if(!button)return;const original=button.textContent;button.textContent='Copiado ✓';setTimeout(()=>{button.textContent=original},1600);
+  };
+}
+function renderTeamInviteCard(){
+  installTeamInviteCard();
+  const card=$('#teamInviteCard');if(!card)return;
+  const isOwner=appState.currentUser?.profile==='Proprietário/Admin';
+  card.classList.toggle('hidden',!isOwner);
+  if(!isOwner)return;
+  $('#teamInviteCode').textContent=cloudSyncState.inviteCode||'Sincronizando...';
+  $('#teamInviteHint').textContent=cloudSyncState.inviteCode?'Válido enquanto a organização existir. Peça para o colega usar “Já tem uma equipe?” na tela inicial.':'Aguarde a sincronização com a nuvem para gerar o código.';
+}
+
+function setJoinTeamMode(active){
+  $('#accessForm').classList.toggle('hidden',active);
+  $('#joinTeamToggleGroup').classList.toggle('hidden',active);
+  $('#joinTeamForm').classList.toggle('hidden',!active);
+  $('#joinTeamMessage').textContent='';
+}
+async function joinTeamWithCode(inviteCode){
+  const response=await fetch('/api/sync/join',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({inviteCode})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok){
+    const messages={invite_code_required:'Informe o código de convite.',invite_not_found:'Não encontramos esse código. Confira com quem te convidou.',already_in_another_org:'Este dispositivo já está associado a outra empresa.',authentication_required:'Não foi possível confirmar seu acesso agora. Tente novamente em instantes.'};
+    throw new Error(messages[data.error]||'Não foi possível entrar com este código agora.');
+  }
+  return data;
+}
+function setupJoinTeamFlow(){
+  const toggle=$('#joinTeamToggle'),back=$('#joinTeamBack'),form=$('#joinTeamForm');
+  if(!toggle||!form)return;
+  toggle.onclick=()=>setJoinTeamMode(true);
+  back.onclick=()=>setJoinTeamMode(false);
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const button=$('#joinTeamButton'),message=$('#joinTeamMessage'),code=$('#joinTeamCode').value.trim();
+    message.textContent='';button.disabled=true;button.textContent='Entrando...';
+    try{
+      const data=await joinTeamWithCode(code);
+      if(!data.snapshot){message.textContent='Código válido, mas a empresa ainda não tem dados sincronizados. Peça para o Proprietário/Admin sincronizar antes de convidar.';button.disabled=false;button.textContent='Entrar na equipe';return}
+      replaceSyncStorage(localStorage,data.snapshot.payload);saveSyncMeta(data.snapshot);location.reload();
+    }catch(error){message.textContent=error.message;button.disabled=false;button.textContent='Entrar na equipe'}
+  });
+}
+
 function initialize(){
   const owner=getOwner();
   const sessionUser=activeSessionUser();
   if(sessionUser&&owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
   setScreen('authScreen');
+  setJoinTeamMode(false);
+  $('#joinTeamToggleGroup').classList.toggle('hidden',Boolean(owner));
   if(owner){
     $('#accessLabel').textContent='BEM-VINDO DE VOLTA';
     $('#accessTitle').textContent='Acesse sua empresa';
@@ -466,7 +520,7 @@ function renderReceipts(){const won=dealsVisibleToCurrentUser(getDeals()).filter
 function openReceiptModal(id,celebration=false){const deal=getDeals().find(item=>item.id===id);if(!deal)return;$('#receiptModal').classList.toggle('receipt-win-mode',celebration);$('#receiptModalEyebrow').textContent=celebration?'VENDA GANHA':'ATUALIZAR PAGAMENTO';$('#receiptModalTitle').textContent=celebration?'Você venceu!':deal.title;$('#receiptModalPrompt').textContent=celebration?`Vamos registrar o recebimento de ${formatMoney(deal.value)} agora? Você pode ajustar os dados provisórios.`:`Atualize o recebimento de ${deal.title}.`;$('#receiptForm [name="dealId"]').value=id;$('#receiptForm [name="total"]').value=deal.value;$('#receiptForm [name="received"]').value=deal.receivedAmount||(deal.paymentStatus==='received'?deal.value:0);$('#receiptForm [name="dueDate"]').value=deal.dueDate||todayISO();$('#receiptForm [name="status"]').value=deal.paymentStatus||'pending';$('#receiptModal').classList.remove('hidden');$('#receiptModal').setAttribute('aria-hidden','false')}
 function closeReceiptModal(){$('#receiptModal').classList.add('hidden');$('#receiptModal').setAttribute('aria-hidden','true');$('#receiptForm').reset()}
 function renderSettings(){const company=getCompany()||{},owner=getOwner()||{};$('#companySettings').innerHTML=`<div><span>Empresa</span><b>${escapeHtml(company.name||'Não informada')}</b></div><div><span>Segmento</span><b>${escapeHtml(company.segment||'Não informado')}</b></div><div><span>Equipe</span><b>${escapeHtml(company.size||'Não informada')}</b></div><div><span>Plano</span><b>${companyPlanLabel(company.plan)}</b></div><div><span>Proprietário</span><b>${escapeHtml(owner.name||'')}</b></div><div><span>Armazenamento</span><b>Local neste navegador</b></div>`;const input=$('#staleDealDays');if(input){input.value=getStaleDealDays();input.onchange=()=>{input.value=saveStaleDealDays(input.value);if(appState.currentView==='today')renderTodayActivities()}}}
-function renderTeam(){const users=getUsers(),active=users.filter(user=>user.status==='active');$('#activeUsersCount').textContent=`${active.length} ${active.length===1?'usuário':'usuários'}`;$('#teamGrid').innerHTML=users.map(user=>`<article class="team-card"><div class="team-card-top"><span class="user-avatar">${ownerInitials(user.name)}</span><div><h3>${escapeHtml(user.name)}</h3><p>${escapeHtml(user.email)}</p></div><i class="user-state ${user.status==='inactive'?'inactive':''}" title="${user.status==='active'?'Ativo':'Inativo'}"></i></div><div class="team-card-info"><div><small>PERFIL</small><strong>${escapeHtml(user.profile)}</strong></div><div><small>VISIBILIDADE</small><strong>${user.visibility==='all'?'Todo o funil':'Carteira própria'}</strong></div></div><div class="team-card-actions">${user.profile==='Proprietário/Admin'?'<button disabled>Acesso principal</button>':`<button data-toggle-user="${user.id}">${user.status==='active'?'Desativar':'Ativar'}</button>`}</div></article>`).join('');document.querySelectorAll('[data-toggle-user]').forEach(button=>button.onclick=()=>toggleUserStatus(button.dataset.toggleUser));renderGoalsEditor(users)}
+function renderTeam(){renderTeamInviteCard();const users=getUsers(),active=users.filter(user=>user.status==='active');$('#activeUsersCount').textContent=`${active.length} ${active.length===1?'usuário':'usuários'}`;$('#teamGrid').innerHTML=users.map(user=>`<article class="team-card"><div class="team-card-top"><span class="user-avatar">${ownerInitials(user.name)}</span><div><h3>${escapeHtml(user.name)}</h3><p>${escapeHtml(user.email)}</p></div><i class="user-state ${user.status==='inactive'?'inactive':''}" title="${user.status==='active'?'Ativo':'Inativo'}"></i></div><div class="team-card-info"><div><small>PERFIL</small><strong>${escapeHtml(user.profile)}</strong></div><div><small>VISIBILIDADE</small><strong>${user.visibility==='all'?'Todo o funil':'Carteira própria'}</strong></div></div><div class="team-card-actions">${user.profile==='Proprietário/Admin'?'<button disabled>Acesso principal</button>':`<button data-toggle-user="${user.id}">${user.status==='active'?'Desativar':'Ativar'}</button>`}</div></article>`).join('');document.querySelectorAll('[data-toggle-user]').forEach(button=>button.onclick=()=>toggleUserStatus(button.dataset.toggleUser));renderGoalsEditor(users)}
 function installGoalsEditor(){if($('#salesGoalsEditor'))return;$('#teamGrid').insertAdjacentHTML('afterend','<section id="salesGoalsEditor" class="sales-goals-editor hidden"><header><div><small>GESTÃO DE PERFORMANCE</small><h2>Metas comerciais</h2><p>Defina objetivos mensais individuais e coletivos.</p></div><label>Período<input id="goalsPeriod" type="month"></label></header><div class="goals-table-head"><span>Responsável</span><span>Valor vendido</span><span>Valor recebido</span><span>Atividades concluídas</span><span>Progresso real</span></div><div id="individualGoalRows"></div><div class="team-goal-title"><span>◎</span><div><strong>Meta coletiva da equipe</strong><small>Objetivo compartilhado do período</small></div></div><div id="teamGoalRow"></div><footer><span>Percentual médio dos indicadores com meta definida.</span><button type="button" id="saveSalesGoals">Salvar metas</button></footer></section>');$('#goalsPeriod').onchange=()=>renderGoalsEditor();$('#saveSalesGoals').onclick=saveSalesGoalForm}
 function goalFields(prefix,values={}){return `<label><small>VENDIDO (R$)</small><input type="number" min="0" step="100" data-goal-field="sold" data-goal-owner="${prefix}" value="${Number(values.sold||0)}"></label><label><small>RECEBIDO (R$)</small><input type="number" min="0" step="100" data-goal-field="received" data-goal-owner="${prefix}" value="${Number(values.received||0)}"></label><label><small>ATIVIDADES</small><input type="number" min="0" step="1" data-goal-field="activities" data-goal-owner="${prefix}" value="${Number(values.activities||0)}"></label>`}
 function renderGoalsEditor(users=getUsers()){installGoalsEditor();const panel=$('#salesGoalsEditor'),sellers=activeSellers(users),allowed=canManageGoals()&&canUsePerformanceFeatures();panel.classList.toggle('hidden',!allowed);if(!allowed)return;const period=$('#goalsPeriod').value||goalPeriodNow(),periodGoals=getGoals()[period]||{users:{},team:{}};$('#goalsPeriod').value=period;$('#individualGoalRows').innerHTML=sellers.map(user=>{const target=periodGoals.users?.[user.id]||{},actual=sellerPerformance(user,period);return `<div class="goal-editor-row"><div class="goal-person"><span>${ownerInitials(user.name)}</span><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.profile)}</small></div></div>${goalFields(user.id,target)}${goalProgressMarkup(actual,target)}</div>`}).join('');const teamTarget=periodGoals.team||{},teamActual=teamPerformanceForGoals(sellers,period);$('#teamGoalRow').innerHTML=`<div class="goal-editor-row team">${goalFields('team',teamTarget)}${goalProgressMarkup(teamActual,teamTarget)}</div>`}
@@ -546,6 +600,7 @@ $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
+setupJoinTeamFlow();
 bootstrapCloudSync().then(result=>{if(!result.reloading)initialize()});
 renderMenuNewBadges();
 function renderRoleFocus(){

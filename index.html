@@ -39,6 +39,16 @@
         <p id="accessMessage" class="message" role="alert"></p>
         <div class="security-note"><span>✓</span><small>Sua senha é protegida e permanece somente neste navegador.</small></div>
       </form>
+      <p class="join-team-toggle" id="joinTeamToggleGroup"><button type="button" id="joinTeamToggle" class="text-button">Já tem uma equipe? Entrar com código de convite</button></p>
+      <form id="joinTeamForm" class="access-card hidden">
+        <div class="step-label">ENTRAR EM UMA EQUIPE</div>
+        <h2>Entrar com código de convite</h2>
+        <p>Peça o código para o Proprietário/Admin da sua empresa, em "Equipe e acessos".</p>
+        <label>Código de convite<input id="joinTeamCode" placeholder="Ex.: AB12-CD34" autocapitalize="characters" required></label>
+        <button type="submit" class="primary wide" id="joinTeamButton">Entrar na equipe</button>
+        <p id="joinTeamMessage" class="message" role="alert"></p>
+        <button type="button" id="joinTeamBack" class="text-button">Voltar</button>
+      </form>
     </section>
   </main>
 
