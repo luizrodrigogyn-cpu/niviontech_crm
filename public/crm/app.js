@@ -669,14 +669,69 @@ function refreshOrbitAttention(){
   trigger.hidden=!appState.currentUser;
   if(!appState.currentUser)return;
   const items=getOrbitAttentionItems();
+  const previousCount=Number(trigger.dataset.previousCount||0);
+  const riskCount=items.filter(item=>item.priority===1).length;
+  const state=riskCount>=3?'risk':items.length?'attention':'available';
+  trigger.classList.remove('orbit-state-available','orbit-state-attention','orbit-state-risk');
+  trigger.classList.add('orbit-state-'+state);
+  trigger.dataset.orbitState=state;
+  trigger.title={available:'Orbit disponível · Tudo sob controle',attention:`Orbit encontrou ${items.length} ${items.length===1?'ponto de atenção':'pontos de atenção'}`,risk:`Orbit encontrou ${riskCount} prioridades vencidas`}[state];
+  trigger.setAttribute('aria-label',trigger.title+'. Clique para abrir ou arraste para mover.');
+  const signature=items.map(item=>item.type+'|'+item.title+'|'+item.detail).join('::');
+  const seenSignature=sessionStorage.getItem('niviontech_orbit_seen_attention')||'';
+  trigger.classList.toggle('orbit-has-news',Boolean(items.length&&signature!==seenSignature));
+  trigger.dataset.attentionSignature=signature;
+  if(previousCount>0&&!items.length){
+    trigger.classList.add('orbit-state-success');
+    setTimeout(()=>trigger.classList.remove('orbit-state-success'),1800);
+  }
+  trigger.dataset.previousCount=String(items.length);
   const badge=$('#orbitAttentionCount');
   if(badge){badge.textContent=items.length>9?'9+':items.length;badge.hidden=!items.length}
   trigger.setAttribute('aria-label',items.length?items.length+' pontos precisam de atenção':'Nenhum ponto urgente');
 }
 
+function getOrbitContext(){
+  const view=document.querySelector('.sidebar [data-view].active')?.dataset.view||appState.currentView||'today';
+  const deals=dealsVisibleToCurrentUser(getDeals());
+  const clients=getClients();
+  const activities=getActivities();
+  const today=new Date();today.setHours(0,0,0,0);
+  const openDeals=deals.filter(deal=>!['won','lost'].includes(deal.status));
+  const withoutNext=openDeals.filter(deal=>!deal.nextAction||!deal.nextActionDate).length;
+  const stalled=openDeals.filter(deal=>Math.floor((Date.now()-new Date(deal.movedAt||deal.createdAt||Date.now()).getTime())/86400000)>getStaleDealDays()).length;
+  const overdue=activities.filter(activity=>!activity.done&&activity.date&&new Date(activity.date+'T00:00:00')<today).length;
+  const incompleteClients=clients.filter(client=>!client.phone||!client.email).length;
+  const pendingReceipts=deals.filter(deal=>deal.status==='won'&&deal.paymentStatus!=='received').length;
+  const contexts={
+    today:{eyebrow:'ORBIT · SEU DIA',title:overdue?'Comece pelo que venceu':'Seu dia está organizado',text:overdue?`${overdue} ${overdue===1?'atividade precisa':'atividades precisam'} da sua atenção antes dos novos compromissos.`:'As próximas ações registradas estão guiando suas prioridades.',action:'activities',label:'Ver agenda'},
+    pipeline:{eyebrow:'ORBIT · FUNIL',title:stalled?'Há negociações esperando por você':'Funil em movimento',text:stalled?`${stalled} ${stalled===1?'oportunidade está parada':'oportunidades estão paradas'} além do ritmo configurado.`:withoutNext?`${withoutNext} ${withoutNext===1?'negociação precisa':'negociações precisam'} de próximo passo e data.`:'As oportunidades abertas possuem continuidade definida.',action:'pipeline',label:'Revisar funil'},
+    clients:{eyebrow:'ORBIT · RELACIONAMENTOS',title:incompleteClients?'Complete sua base de clientes':'Base pronta para crescer',text:incompleteClients?`${incompleteClients} ${incompleteClients===1?'cadastro está incompleto':'cadastros estão incompletos'} em telefone ou e-mail.`:`Você já possui ${clients.length} ${clients.length===1?'relacionamento registrado':'relacionamentos registrados'}.`,action:'clients',label:'Ver clientes'},
+    activities:{eyebrow:'ORBIT · AGENDA',title:overdue?'Retornos vencidos primeiro':'Ritmo comercial em dia',text:overdue?`Resolva ${overdue} ${overdue===1?'atividade atrasada':'atividades atrasadas'} antes que os leads esfriem.`:'Nenhuma atividade vencida foi encontrada agora.',action:'activities',label:'Abrir agenda'},
+    organize:{eyebrow:'ORBIT · ORGANIZAÇÃO',title:'Transforme conversa em próximo passo',text:'Cole uma conversa ou anotação. Eu preparo um rascunho e você confirma antes de salvar.',action:'organize',label:'Começar leitura'},
+    proposals:{eyebrow:'ORBIT · PROPOSTAS',title:'Acompanhe cada decisão',text:'Revise propostas enviadas e transforme aprovações em avanço real no funil.',action:'proposals',label:'Ver propostas'},
+    receipts:{eyebrow:'ORBIT · RECEBIMENTOS',title:pendingReceipts?'Venda ganha, recebimento pendente':'Vendas e recebimentos alinhados',text:pendingReceipts?`${pendingReceipts} ${pendingReceipts===1?'venda ainda precisa':'vendas ainda precisam'} de confirmação financeira.`:'Nenhuma venda ganha está aguardando confirmação de entrada.',action:'receipts',label:'Ver recebimentos'},
+    reports:{eyebrow:'ORBIT · ANÁLISE',title:'Transforme números em decisão',text:`Seu funil possui ${openDeals.length} ${openDeals.length===1?'oportunidade aberta':'oportunidades abertas'} para acompanhar.`,action:'reports',label:'Abrir indicadores'},
+    team:{eyebrow:'ORBIT · EQUIPE',title:'Responsabilidade clara faz o funil avançar',text:'Revise papéis, acessos e responsáveis para que nenhuma oportunidade fique sem dono.',action:'team',label:'Ver equipe'},
+    settings:{eyebrow:'ORBIT · CONFIGURAÇÃO',title:'Ajuste o CRM ao seu ritmo',text:'Defina o período de inatividade e mantenha uma cópia segura dos seus dados.',action:'settings',label:'Ver ajustes'}
+  };
+  return contexts[view]||contexts.today;
+}
+function renderOrbitContext(){
+  const box=$('#orbitContextCard');
+  if(!box)return;
+  const context=getOrbitContext();
+  $('#orbitContextEyebrow').textContent=context.eyebrow;
+  $('#orbitContextTitle').textContent=context.title;
+  $('#orbitContextText').textContent=context.text;
+  const action=$('#orbitContextAction');
+  action.textContent=context.label;
+  action.dataset.contextView=context.action;
+}
 function renderOrbitAttention(){
   const list=$('#orbitAttentionList');
   if(!list)return;
+  renderOrbitContext();
   const items=getOrbitAttentionItems();
   list.innerHTML=items.length?items.map((item,index)=>'<button type="button" class="orbit-attention-item priority-'+item.priority+'" data-attention-target="'+item.target+'"><span class="attention-index">'+(index+1)+'</span><span><small>'+item.type+'</small><strong>'+escapeHtml(item.title)+'</strong><p>'+escapeHtml(item.detail)+'</p></span><i>›</i></button>').join(''):'<div class="orbit-attention-empty"><span>✓</span><strong>Tudo sob controle</strong><p>O Orbit não encontrou nenhum ponto urgente agora.</p></div>';
   list.querySelectorAll('[data-attention-target]').forEach(button=>button.addEventListener('click',()=>{closeOrbitAttention();showView(button.dataset.attentionTarget)}));
@@ -686,6 +741,11 @@ function renderOrbitAttention(){
 
 function openOrbitAttention(){
   renderOrbitAttention();
+  const trigger=$('#orbitAttentionTrigger');
+  if(trigger){
+    sessionStorage.setItem('niviontech_orbit_seen_attention',trigger.dataset.attentionSignature||'');
+    trigger.classList.remove('orbit-has-news');
+  }
   $('#orbitAttentionPanel')?.classList.add('open');
   $('#orbitAttentionBackdrop')?.classList.add('open');
   document.body.classList.add('attention-open');
@@ -699,8 +759,86 @@ function closeOrbitAttention(){
 
 function installOrbitAttention(){
   if($('#orbitAttentionTrigger'))return;
-  document.body.insertAdjacentHTML('beforeend','<button type="button" id="orbitAttentionTrigger" class="orbit-attention-trigger" aria-haspopup="dialog" hidden><span class="orbit-attention-orb">O</span><span class="orbit-attention-label">Atenção</span><b id="orbitAttentionCount" hidden>0</b></button><div id="orbitAttentionBackdrop" class="orbit-attention-backdrop"></div><aside id="orbitAttentionPanel" class="orbit-attention-panel" role="dialog" aria-modal="true" aria-labelledby="orbitAttentionTitle"><header><div><small>ORBIT · PRIORIDADES</small><h2 id="orbitAttentionTitle">Central de Atenção</h2><p id="orbitAttentionSummary">Leitura rápida do seu CRM</p></div><button type="button" id="closeOrbitAttention" aria-label="Fechar">×</button></header><div id="orbitAttentionList" class="orbit-attention-list"></div><footer>As recomendações são calculadas localmente com os dados do seu CRM.</footer></aside>');
-  $('#orbitAttentionTrigger').addEventListener('click',openOrbitAttention);
+  document.body.insertAdjacentHTML('beforeend','<button type="button" id="orbitAttentionTrigger" class="orbit-attention-trigger" aria-haspopup="dialog" hidden><span class="orbit-attention-orb">O</span><span class="orbit-attention-label">Atenção</span><b id="orbitAttentionCount" hidden>0</b></button><div id="orbitAttentionBackdrop" class="orbit-attention-backdrop"></div><aside id="orbitAttentionPanel" class="orbit-attention-panel" role="dialog" aria-modal="true" aria-labelledby="orbitAttentionTitle"><header><div><small>ORBIT · ASSISTENTE COMERCIAL</small><h2 id="orbitAttentionTitle">Como posso ajudar?</h2><p id="orbitAttentionSummary">Atalhos e prioridades do seu CRM</p></div><button type="button" id="closeOrbitAttention" aria-label="Fechar">×</button></header><section id="orbitContextCard" class="orbit-context-card"><span class="orbit-context-mark">O</span><div><small id="orbitContextEyebrow">ORBIT · CONTEXTO</small><strong id="orbitContextTitle">Leitura da tela atual</strong><p id="orbitContextText"></p><button type="button" id="orbitContextAction">Ver detalhes</button></div></section><section class="orbit-quick-section" aria-labelledby="orbitQuickTitle"><div class="orbit-section-label"><strong id="orbitQuickTitle">Ações rápidas</strong><span>Escolha uma ação</span></div><div class="orbit-quick-actions"><button type="button" data-orbit-command="search"><i>⌕</i><span><strong>Buscar no CRM</strong><small>Clientes, leads e atividades</small></span></button><button type="button" data-orbit-command="deal"><i>↗</i><span><strong>Nova oportunidade</strong><small>Adicionar ao funil</small></span></button><button type="button" data-orbit-command="client"><i>+</i><span><strong>Novo cliente</strong><small>Criar relacionamento</small></span></button><button type="button" data-orbit-command="activity"><i>✓</i><span><strong>Nova atividade</strong><small>Agendar próximo passo</small></span></button><button type="button" data-orbit-command="organize"><i>✦</i><span><strong>Cole e organize</strong><small>Transformar conversa em rascunho</small></span></button><button type="button" data-orbit-command="today"><i>◎</i><span><strong>Ver meu dia</strong><small>Abrir prioridades de hoje</small></span></button></div></section><div class="orbit-section-label orbit-priority-label"><strong>O Orbit recomenda</strong><span>Calculado com seus dados</span></div><div id="orbitAttentionList" class="orbit-attention-list"></div><footer>As recomendações são calculadas localmente com os dados do seu CRM.</footer></aside>');
+  const trigger=$('#orbitAttentionTrigger');
+  const positionKey='niviontech_orbit_position';
+  const margin=14;
+  let drag=null;
+  let suppressClick=false;
+  const clamp=(value,min,max)=>Math.min(Math.max(value,min),Math.max(min,max));
+  const place=(left,top,animate=false)=>{
+    const rect=trigger.getBoundingClientRect();
+    trigger.classList.toggle('orbit-is-snapping',animate);
+    trigger.style.left=clamp(left,margin,window.innerWidth-rect.width-margin)+'px';
+    trigger.style.top=clamp(top,margin,window.innerHeight-rect.height-margin)+'px';
+    trigger.style.right='auto';
+    trigger.style.bottom='auto';
+  };
+  const restorePosition=()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem(positionKey)||'null');
+      if(saved&&Number.isFinite(saved.left)&&Number.isFinite(saved.top))place(saved.left,saved.top);
+    }catch(error){localStorage.removeItem(positionKey)}
+  };
+  const saveAndSnap=()=>{
+    const rect=trigger.getBoundingClientRect();
+    const left=rect.left+rect.width/2<window.innerWidth/2?margin:window.innerWidth-rect.width-margin;
+    const top=clamp(rect.top,margin,window.innerHeight-rect.height-margin);
+    place(left,top,true);
+    localStorage.setItem(positionKey,JSON.stringify({left,top}));
+    setTimeout(()=>trigger.classList.remove('orbit-is-snapping'),260);
+  };
+  trigger.addEventListener('pointerdown',event=>{
+    if(event.button!==undefined&&event.button!==0)return;
+    const rect=trigger.getBoundingClientRect();
+    drag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top,moved:false};
+    trigger.setPointerCapture?.(event.pointerId);
+    trigger.classList.add('orbit-is-dragging');
+  });
+  trigger.addEventListener('pointermove',event=>{
+    if(!drag||drag.pointerId!==event.pointerId)return;
+    if(Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>5)drag.moved=true;
+    if(!drag.moved)return;
+    event.preventDefault();
+    place(event.clientX-drag.offsetX,event.clientY-drag.offsetY);
+  });
+  const finishDrag=event=>{
+    if(!drag||drag.pointerId!==event.pointerId)return;
+    const moved=drag.moved;
+    drag=null;
+    trigger.classList.remove('orbit-is-dragging');
+    if(moved){suppressClick=true;saveAndSnap();setTimeout(()=>suppressClick=false,80)}
+  };
+  trigger.addEventListener('pointerup',finishDrag);
+  trigger.addEventListener('pointercancel',finishDrag);
+  trigger.addEventListener('click',()=>{if(!suppressClick)openOrbitAttention()});
+  const openExistingAction=(view,selectors=[])=>{
+    closeOrbitAttention();
+    showView(view);
+    requestAnimationFrame(()=>{
+      const action=selectors.map(selector=>document.querySelector(selector)).find(Boolean);
+      action?.click();
+    });
+  };
+  const runOrbitCommand=command=>{
+    if(command==='search'){
+      closeOrbitAttention();
+      if(typeof openGlobalSearch==='function')openGlobalSearch();else $('#globalSearchTrigger')?.click();
+      return;
+    }
+    if(command==='deal'){openExistingAction('pipeline',['#newDeal','#addDeal','[data-new-deal]']);return}
+    if(command==='client'){openExistingAction('clients',['#newClient','#addClient','[data-new-client]']);return}
+    if(command==='activity'){openExistingAction('activities',['#newActivity','#addActivity','[data-new-activity]']);return}
+    if(command==='organize'){openExistingAction('organize');return}
+    if(command==='today')openExistingAction('today');
+  };
+  document.querySelectorAll('[data-orbit-command]').forEach(button=>button.addEventListener('click',()=>runOrbitCommand(button.dataset.orbitCommand)));
+  $('#orbitContextAction').addEventListener('click',event=>openExistingAction(event.currentTarget.dataset.contextView||'today'));
+  window.addEventListener('resize',()=>{
+    const rect=trigger.getBoundingClientRect();
+    if(rect.left<margin||rect.top<margin||rect.right>window.innerWidth-margin||rect.bottom>window.innerHeight-margin)saveAndSnap();
+  });
+  restorePosition();
   $('#closeOrbitAttention').addEventListener('click',closeOrbitAttention);
   $('#orbitAttentionBackdrop').addEventListener('click',closeOrbitAttention);
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeOrbitAttention()});
@@ -709,6 +847,13 @@ function installOrbitAttention(){
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installOrbitAttention);else installOrbitAttention();
+
+function installSupportContact(){
+  const footer=document.querySelector('.sidebar-footer');
+  if(!footer||$('#crmSupportContact'))return;
+  footer.insertAdjacentHTML('afterbegin','<a id="crmSupportContact" class="crm-support-contact" href="mailto:crm@niviontech.com.br?subject=Suporte%20NivionTech%20CRM" title="Enviar e-mail para crm@niviontech.com.br"><i>?</i><span><strong>Suporte</strong><small>crm@niviontech.com.br</small></span></a>');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installSupportContact);else installSupportContact();
 const SALES_GOAL_KEY='niviontech_sales_goal';
 
 function installCommercialPulse(){
