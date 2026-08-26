@@ -688,10 +688,23 @@ $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
 setupJoinTeamFlow();
+function revealApplication(){document.body.classList.remove('app-booting')}
+window.addEventListener('error',revealApplication);
+window.addEventListener('unhandledrejection',revealApplication);
+setTimeout(revealApplication,9000);
 bootstrapCloudSync().then(result=>{
   if(result.reloading)return;
-  initialize();
-  requestAnimationFrame(()=>document.body.classList.remove('app-booting'));
+  revealApplication();
+  try{initialize()}catch(error){
+    console.error('Falha ao montar o CRM',error);
+    const owner=getOwner();
+    if(owner){appState.currentUser=owner;setScreen('appScreen')}
+    else setScreen('authScreen');
+  }
+}).catch(error=>{
+  console.error('Falha ao iniciar o CRM',error);
+  revealApplication();
+  setScreen(getOwner()?'appScreen':'authScreen');
 });
 renderMenuNewBadges();
 function renderRoleFocus(){
