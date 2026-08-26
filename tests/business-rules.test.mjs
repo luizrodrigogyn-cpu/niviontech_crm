@@ -4,6 +4,7 @@ import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
 import {validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
+import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 
 const tests=[];
 function test(name,run){tests.push({name,run})}
@@ -103,6 +104,28 @@ test('passagem de bastão inclui contexto, responsáveis e próximo passo',()=>{
   assert.match(summary.text,/Ana passou para Carlos/);
   assert.match(summary.text,/Enviar proposta/);
   assert.match(summary.text,/Empresa Sol/);
+});
+
+function memoryStorage(initial={}){
+  const values=new Map(Object.entries(initial));
+  return{get length(){return values.size},key:index=>[...values.keys()][index]??null,getItem:key=>values.has(key)?values.get(key):null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key),dump:()=>Object.fromEntries(values)};
+}
+
+test('sincronização envia somente dados do NivionTech e preserva preferências locais',()=>{
+  const storage=memoryStorage({niviontech_owner:'{"id":"owner"}',niviontech_device_id:'device-1',niviontech_sync_meta:'{}',theme:'dark'});
+  assert.deepEqual(collectSyncStorage(storage),{niviontech_owner:'{"id":"owner"}'});
+  replaceSyncStorage(storage,{niviontech_company:'{"name":"NivionTech"}'});
+  assert.equal(storage.getItem('niviontech_owner'),null);
+  assert.equal(storage.getItem('niviontech_device_id'),'device-1');
+  assert.equal(storage.getItem('theme'),'dark');
+});
+
+test('sincronização baixa a nuvem apenas quando a cópia local está limpa',()=>{
+  const local={niviontech_owner:'local'},cloud={payload:{niviontech_owner:'cloud'},revision:2};
+  const cleanMeta={revision:1,fingerprint:snapshotFingerprint(local)};
+  assert.equal(resolveStartupSync({localSnapshot:local,cloudSnapshot:cloud,meta:cleanMeta}).action,'download');
+  const changed={...local,niviontech_clients:'[]'};
+  assert.equal(resolveStartupSync({localSnapshot:changed,cloudSnapshot:cloud,meta:cleanMeta}).action,'conflict');
 });
 
 let failures=0;

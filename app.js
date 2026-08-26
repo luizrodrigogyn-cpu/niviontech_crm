@@ -8,6 +8,7 @@ import {receiptsDomain,applyReceiptRules,createProvisionalReceipt} from './modul
 import {reportsDomain} from './modules/reports.js';
 import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
+import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
 
@@ -101,6 +102,65 @@ function sellerRecognition(user,progress){const badges=[];[50,75,100].forEach(ma
 function activeSessionUser(){const id=sessionStorage.getItem(SESSION);const users=getUsers();return id==='active'?users.find(user=>user.profile==='Proprietário/Admin')||users[0]:users.find(user=>user.id===id)}
 function createSalt(){return crypto.getRandomValues(new Uint32Array(4)).join('-')}
 function setScreen(name){['authScreen','onboardingScreen','appScreen'].forEach(id=>$('#'+id).classList.toggle('hidden',id!==name))}
+
+const cloudSyncState={enabled:false,busy:false,conflict:null,timer:null,status:'Conectando à proteção privada...',tone:'neutral'};
+function syncDeviceId(){let id=localStorage.getItem(SYNC_DEVICE_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(SYNC_DEVICE_KEY,id)}return id}
+function readSyncMeta(){try{return JSON.parse(localStorage.getItem(SYNC_META_KEY))}catch{return null}}
+function saveSyncMeta(snapshot){const meta={revision:Number(snapshot?.revision||0),fingerprint:snapshotFingerprint(collectSyncStorage(localStorage)),updatedAt:snapshot?.updatedAt||new Date().toISOString()};localStorage.setItem(SYNC_META_KEY,JSON.stringify(meta));return meta}
+function setCloudSyncStatus(status,tone='neutral'){cloudSyncState.status=status;cloudSyncState.tone=tone;const element=$('#cloudSyncStatus');if(element){element.textContent=status;element.dataset.tone=tone}}
+async function cloudSyncRequest(method='GET',body){
+  const response=await fetch('/api/sync',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
+  const data=await response.json().catch(()=>({}));
+  if(response.status===401)return{localOnly:true};
+  if(response.status===409)return{conflict:true,...data};
+  if(!response.ok)throw new Error(data.error||'sync_unavailable');
+  return data;
+}
+async function uploadCloudSnapshot({force=false}={}){
+  if(cloudSyncState.busy)return null;
+  cloudSyncState.busy=true;setCloudSyncStatus('Salvando alterações na nuvem privada...');
+  try{
+    const meta=readSyncMeta(),payload=collectSyncStorage(localStorage),result=await cloudSyncRequest('POST',{payload,baseRevision:Number(meta?.revision||0),deviceId:syncDeviceId(),force});
+    if(result.localOnly){cloudSyncState.enabled=false;setCloudSyncStatus('Dados protegidos neste dispositivo','warning');return null}
+    if(result.conflict){cloudSyncState.conflict=result.snapshot;setCloudSyncStatus('Há duas versões aguardando sua escolha','warning');updateCloudSyncPanel();return null}
+    cloudSyncState.conflict=null;saveSyncMeta(result.snapshot);setCloudSyncStatus('Tudo salvo na nuvem privada','success');updateCloudSyncPanel();return result.snapshot;
+  }catch{setCloudSyncStatus(navigator.onLine?'Nuvem temporariamente indisponível; dados preservados aqui':'Modo offline: dados preservados neste dispositivo','warning');return null}
+  finally{cloudSyncState.busy=false}
+}
+async function flushCloudSync(){
+  if(!cloudSyncState.enabled||cloudSyncState.busy||cloudSyncState.conflict)return;
+  const meta=readSyncMeta(),fingerprint=snapshotFingerprint(collectSyncStorage(localStorage));
+  if(fingerprint!==meta?.fingerprint)await uploadCloudSnapshot();
+}
+function startCloudSyncWatch(){clearInterval(cloudSyncState.timer);cloudSyncState.timer=setInterval(flushCloudSync,3000);window.addEventListener('online',flushCloudSync)}
+async function bootstrapCloudSync(){
+  try{
+    const result=await cloudSyncRequest();
+    if(result.localOnly){setCloudSyncStatus('Dados protegidos neste dispositivo','warning');return{reloading:false}}
+    cloudSyncState.enabled=true;
+    const localSnapshot=collectSyncStorage(localStorage),decision=resolveStartupSync({localSnapshot,cloudSnapshot:result.snapshot,meta:readSyncMeta()});
+    if(decision.action==='download'){replaceSyncStorage(localStorage,result.snapshot.payload);saveSyncMeta(result.snapshot);location.reload();return{reloading:true}}
+    if(decision.action==='upload')await uploadCloudSnapshot();
+    else if(decision.action==='accept'){saveSyncMeta(result.snapshot);setCloudSyncStatus('Tudo salvo na nuvem privada','success')}
+    else if(decision.action==='conflict'){cloudSyncState.conflict=result.snapshot;setCloudSyncStatus('Há duas versões aguardando sua escolha','warning')}
+    else{if(result.snapshot)saveSyncMeta(result.snapshot);setCloudSyncStatus(result.snapshot?'Tudo salvo na nuvem privada':'Proteção pronta para o primeiro cadastro','success')}
+    startCloudSyncWatch();return{reloading:false};
+  }catch{setCloudSyncStatus('Dados preservados localmente; sincronização aguardando conexão','warning');return{reloading:false}}
+}
+async function useCloudSnapshot(){
+  if(!cloudSyncState.conflict||!confirm('Usar a versão salva na nuvem? Antes disso, o CRM baixará uma cópia dos dados atuais deste dispositivo.'))return;
+  downloadFullLocalBackup('pre-cloud-restore');replaceSyncStorage(localStorage,cloudSyncState.conflict.payload);saveSyncMeta(cloudSyncState.conflict);location.reload();
+}
+async function useDeviceSnapshot(){if(confirm('Substituir a versão da nuvem pelos dados atuais deste dispositivo?'))await uploadCloudSnapshot({force:true})}
+function updateCloudSyncPanel(){
+  const status=$('#cloudSyncStatus');if(status){status.textContent=cloudSyncState.status;status.dataset.tone=cloudSyncState.tone}
+  const conflict=$('#cloudSyncConflict');if(conflict)conflict.hidden=!cloudSyncState.conflict;
+}
+function installCloudSyncPanel(){
+  const settings=$('#settingsView');if(!settings||$('#cloudSyncPanel'))return;
+  settings.insertAdjacentHTML('beforeend','<section id="cloudSyncPanel" class="backup-protection cloud-sync-panel"><div class="backup-protection-icon"><span>O</span></div><div class="backup-protection-copy"><small>PROTEÇÃO ORBIT</small><h3>Sincronização privada</h3><p>Seus clientes, oportunidades e atividades ficam disponíveis com segurança em seus dispositivos.</p><span id="cloudSyncStatus">Conectando à proteção privada...</span></div><div class="backup-protection-actions"><button type="button" id="syncNow">Sincronizar agora</button></div><div id="cloudSyncConflict" class="backup-protection-note sync-conflict" hidden><strong>Ação necessária</strong><span>Há alterações diferentes neste dispositivo e na nuvem.</span><button type="button" id="useDeviceSnapshot">Usar este dispositivo</button><button type="button" id="useCloudSnapshot">Usar versão da nuvem</button></div></section>');
+  $('#syncNow').onclick=()=>uploadCloudSnapshot();$('#useDeviceSnapshot').onclick=useDeviceSnapshot;$('#useCloudSnapshot').onclick=useCloudSnapshot;updateCloudSyncPanel();
+}
 
 function initialize(){
   const owner=getOwner();
@@ -486,7 +546,7 @@ $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
-initialize();
+bootstrapCloudSync().then(result=>{if(!result.reloading)initialize()});
 renderMenuNewBadges();
 function renderRoleFocus(){
   const box=$('#roleFocus');
@@ -1182,3 +1242,4 @@ function installIdentityAvatarColors(){
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installIdentityAvatarColors);else installIdentityAvatarColors();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installCloudSyncPanel);else installCloudSyncPanel();

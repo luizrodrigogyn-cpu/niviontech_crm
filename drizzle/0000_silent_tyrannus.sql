@@ -1,0 +1,7 @@
+CREATE TABLE `crm_snapshots` (
+	`user_id` text PRIMARY KEY NOT NULL,
+	`payload` text NOT NULL,
+	`revision` integer DEFAULT 1 NOT NULL,
+	`updated_at` text NOT NULL,
+	`device_id` text NOT NULL
+);
