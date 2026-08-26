@@ -61,10 +61,18 @@ const initialClients=[{id:'client-1',name:'Almeida Engenharia',segment:'Constru�
 const initialProposals=[{id:'proposal-1',title:'Proposta de implantação',client:'Almeida Engenharia',dealId:'deal-1',value:12500,validUntil:new Date(Date.now()+7*86400000).toISOString().slice(0,10),status:'sent',notes:'Condições comerciais apresentadas',createdAt:new Date().toISOString()}];
 const initialActivities=[{id:'activity-1',title:'Apresentar proposta',type:'Reunião',client:'Almeida Engenharia',date:new Date().toISOString().slice(0,10),time:'10:00',note:'Apresentar condições comerciais',done:false},{id:'activity-2',title:'Retornar contato',type:'Ligação',client:'Café do Cerrado',date:new Date().toISOString().slice(0,10),time:'14:30',note:'Confirmar necessidades',done:false},{id:'activity-3',title:'Revisar contrato',type:'Tarefa',client:'Studio Aurora',date:new Date().toISOString().slice(0,10),time:'16:00',note:'Validar cláusulas finais',done:false}];
 
+const AUTH_TIMEOUT_MS=12000;
+function withTimeout(operation,timeout=AUTH_TIMEOUT_MS,message='A validação demorou mais que o esperado. Verifique sua conexão e tente novamente.'){
+  let timer;
+  return Promise.race([operation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),timeout)})]).finally(()=>clearTimeout(timer));
+}
 async function derivePassword(password,salt){
-  const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:120000,hash:'SHA-256'},material,256);
-  return Array.from(new Uint8Array(bits),byte=>byte.toString(16).padStart(2,'0')).join('');
+  return withTimeout((async()=>{
+    if(!crypto?.subtle)throw new Error('Este navegador não oferece a proteção necessária para validar a senha.');
+    const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+    const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:120000,hash:'SHA-256'},material,256);
+    return Array.from(new Uint8Array(bits),byte=>byte.toString(16).padStart(2,'0')).join('');
+  })());
 }
 
 function getOwner(){try{return JSON.parse(localStorage.getItem(STORAGE.owner))}catch{return null}}
@@ -206,6 +214,7 @@ $('#accessForm').addEventListener('submit',async event=>{
   message.textContent='';
   button.disabled=true;
   button.textContent='Validando...';
+  button.setAttribute('aria-busy','true');
   try{
     if(accessMode==='register'&&!owner){
       const name=$('#ownerName').value.trim();
@@ -225,8 +234,8 @@ $('#accessForm').addEventListener('submit',async event=>{
       appState.currentUser=user;sessionStorage.setItem(SESSION,user.id);
       (owner||user).onboardingComplete?openDashboard(user):openOnboarding();
     }
-  }catch(error){message.textContent=error.message}
-  finally{button.disabled=false;button.textContent=accessMode==='login'||owner?'Entrar':'Criar meu acesso'}
+  }catch(error){message.textContent=error instanceof Error?error.message:'Não foi possível validar o acesso. Tente novamente.'}
+  finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent=accessMode==='login'||owner?'Entrar':'Criar meu acesso'}
 });
 
 const appState={onboardingStep:0,onboardingDraft:{},currentView:'today',currentUser:null,activeClientFilter:'Todos',activeActivityFilter:'pending',activeDealId:null,activeClientId:null,lastMoveAction:null,undoTimer:null,activeProposalFilter:'all',pendingClientMerge:null};
