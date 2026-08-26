@@ -119,3 +119,4 @@ button:not(.icon-button):not(.edit-card-title):not(.temperature-trigger),input,s
 @keyframes orbit-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.orbit-rings i{animation:none}}
 @media(max-width:720px){.brand-canvas{display:none}.orbit-rings{width:340px;height:340px;right:-120px;bottom:-120px}}
+.brand-panel>.brand-logo-full{padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}.brand-panel>.brand-logo-full .brand-symbol{flex-basis:94px;width:94px;height:94px;border:0;border-radius:0;background:transparent;box-shadow:none}.brand-panel>.brand-logo-full .brand-symbol img{width:141px;height:94px;left:-24px;top:0;object-fit:cover;object-position:center}
