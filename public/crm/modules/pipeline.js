@@ -42,6 +42,7 @@ export function validateNegotiation(deal){
 }
 export function applyWonDealRules(deal){
   deal.status='won';
+  deal.stage='won';
   deal.paymentStatus=deal.paymentStatus||'pending';
   return deal;
 }
