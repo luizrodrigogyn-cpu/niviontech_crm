@@ -595,10 +595,65 @@ $('#cancelClientMerge').onclick=closeClientMergeModal;
 document.querySelector('[data-close-client-merge]').onclick=closeClientMergeModal;
 $('#activityForm').onsubmit=event=>{event.preventDefault();const activity=Object.fromEntries(new FormData(event.target));activity.id='activity-'+Date.now();activity.done=false;const activities=getActivities();activities.push(activity);saveActivities(activities);closeActivityModal();showView('activities')};
 let pendingOrganizeReading=null;
+
+// Nunca perder o que foi colado: o texto do "Cole e organize" é salvo a cada
+// pausa de digitação e recuperado automaticamente se a aba fechar, recarregar
+// ou cair a conexão antes da confirmação. É apagado assim que o rascunho é
+// confirmado (ou descartado manualmente em "Revisar texto").
+const ORGANIZE_DRAFT_KEY='niviontech_local_organize_draft_text';
+function restoreOrganizeDraftText(){
+  try{const saved=localStorage.getItem(ORGANIZE_DRAFT_KEY);if(saved)$('#conversationText').value=saved}catch{}
+}
+function clearOrganizeDraftText(){try{localStorage.removeItem(ORGANIZE_DRAFT_KEY)}catch{}}
+restoreOrganizeDraftText();
+$('#conversationText').addEventListener('input',debounce(event=>{
+  const value=event.target.value;
+  try{value.trim()?localStorage.setItem(ORGANIZE_DRAFT_KEY,value):localStorage.removeItem(ORGANIZE_DRAFT_KEY)}catch{}
+},400));
+
 $('#analyzeConversation').onclick=()=>{const text=$('#conversationText').value.trim();if(!text){$('#conversationText').focus();return}pendingOrganizeReading=analyzeLocally(text);$('#organizeConfirmationText').textContent=pendingOrganizeReading.confirmation;const labels={value:'Valor',date:'Data',phone:'Telefone',urgency:'Urgência',email:'E-mail',time:'Horário'};$('#organizeSignals').innerHTML=Object.entries(pendingOrganizeReading.detected).filter(([,found])=>found).map(([key])=>`<span>✓ ${labels[key]}</span>`).join('')||'<span>Leitura básica</span>';$('#draftPlaceholder').classList.add('hidden');$('#organizeDraft').classList.add('hidden');$('#organizeConfirmation').classList.remove('hidden')};
 $('#reviseOrganizeReading').onclick=()=>{pendingOrganizeReading=null;$('#organizeConfirmation').classList.add('hidden');$('#draftPlaceholder').classList.remove('hidden');$('#conversationText').focus()};
 $('#confirmOrganizeReading').onclick=()=>{if(!pendingOrganizeReading)return;const form=$('#organizeDraft'),draft=analyzeLocally($('#conversationText').value.trim()).draft;pendingOrganizeReading.draft=draft;Object.entries(draft).forEach(([key,value])=>{const field=form.querySelector(`[name="${key}"]`);if(field)field.value=value});$('#organizeConfirmation').classList.add('hidden');form.classList.remove('hidden')};
-$('#organizeDraft').onsubmit=event=>{event.preventDefault();if(!pendingOrganizeReading)return;const draft=Object.fromEntries(new FormData(event.target)),recognizedPhone=draft.summary.match(/Telefone:\s*([^·]+)/i)?.[1]?.trim()||'',clients=getClients();let client=clients.find(item=>item.name.trim().toLowerCase()===draft.client.trim().toLowerCase());if(!client){client={id:'client-'+Date.now(),name:draft.client,segment:'A confirmar',status:'Prospect',city:'Não informado',phone:recognizedPhone,email:draft.email||'',interactions:[]};clients.push(client)}else{if(!client.phone&&recognizedPhone)client.phone=recognizedPhone;if(!client.email&&draft.email)client.email=draft.email}client.interactions=client.interactions||[];client.interactions.unshift({id:'interaction-'+Date.now(),title:'Conversa organizada',text:draft.summary,date:new Date().toISOString()});addEntityHistory(client,'Cliente atualizado','Conversa organizada adicionada ao histórico');saveClients(clients);const deals=getDeals(),deal={id:'deal-'+Date.now(),title:draft.title,client:client.name,value:Number(draft.value||0),stage:draft.stage,owner:appState.currentUser?.name||getOwner()?.name||'Admin',ownerRole:appState.currentUser?.profile||'Proprietário/Admin',next:draft.next,nextDate:draft.date,urgency:draft.urgency,createdAt:new Date().toISOString(),history:[]};if(deal.stage===stageByMeaning('new'))assignLeadByRoundRobin(deal);addEntityHistory(deal,'Rascunho confirmado','Oportunidade criada pelo fluxo Cole e organize');deals.push(deal);saveDeals(deals);const activities=getActivities();activities.push({id:'activity-'+Date.now(),title:draft.next,type:'Tarefa',client:client.name,date:draft.date,time:draft.time,note:'Criada a partir de conversa confirmada',owner:appState.currentUser?.name,done:false});saveActivities(activities);alert('Rascunho confirmado. Cliente, oportunidade e próxima ação foram organizados.');pendingOrganizeReading=null;event.target.reset();event.target.classList.add('hidden');$('#organizeConfirmation').classList.add('hidden');$('#draftPlaceholder').classList.remove('hidden');$('#conversationText').value='';showView('today')};
+$('#organizeDraft').onsubmit=event=>{
+  event.preventDefault();if(!pendingOrganizeReading)return;
+  const draft=Object.fromEntries(new FormData(event.target)),recognizedPhone=draft.summary.match(/Telefone:\s*([^·]+)/i)?.[1]?.trim()||'',clients=getClients();
+  // Antes: um cliente só era considerado "já existente" com nome IDÊNTICO, ignorando a mesma
+  // checagem por similaridade/telefone/e-mail usada no cadastro manual — deixando passar
+  // duplicados por esta porta. Agora usa a mesma lógica (findSimilarClient/validateClientRegistration).
+  const duplicateCheck=validateClientRegistration({name:draft.client,phone:recognizedPhone,email:draft.email},clients);
+  let client=duplicateCheck.duplicate?.client||null;
+  if(!client){
+    client={id:'client-'+Date.now(),name:draft.client,segment:'A confirmar',status:'Prospect',city:'Não informado',phone:recognizedPhone,email:draft.email||'',interactions:[]};
+    clients.push(client);
+  }else{
+    if(!client.phone&&recognizedPhone)client.phone=recognizedPhone;
+    if(!client.email&&draft.email)client.email=draft.email;
+  }
+  client.interactions=client.interactions||[];
+  client.interactions.unshift({id:'interaction-'+Date.now(),title:'Conversa organizada',text:draft.summary,date:new Date().toISOString()});
+  addEntityHistory(client,'Cliente atualizado','Conversa organizada adicionada ao histórico');
+  saveClients(clients);
+  // Antes: colar uma segunda conversa sobre o mesmo cliente sempre criava uma NOVA oportunidade,
+  // duplicando o funil quando já existia uma negociação em aberto para ele. Agora, se já existir
+  // uma negociação ativa (não ganha/perdida) para esse cliente, ela é atualizada em vez de duplicada.
+  const deals=getDeals();
+  const existingOpenDeal=deals.find(item=>item.client.trim().toLocaleLowerCase('pt-BR')===client.name.trim().toLocaleLowerCase('pt-BR')&&item.status!=='won'&&item.status!=='lost'&&item.stage!==stageByMeaning('won')&&item.stage!==stageByMeaning('lost'));
+  let deal;
+  if(existingOpenDeal){
+    deal=existingOpenDeal;
+    deal.next=draft.next;deal.nextDate=draft.date;deal.urgency=draft.urgency;
+    addEntityHistory(deal,'Atualizado pelo Cole e organize',draft.summary);
+  }else{
+    deal={id:'deal-'+Date.now(),title:draft.title,client:client.name,value:Number(draft.value||0),stage:draft.stage,owner:appState.currentUser?.name||getOwner()?.name||'Admin',ownerRole:appState.currentUser?.profile||'Proprietário/Admin',next:draft.next,nextDate:draft.date,urgency:draft.urgency,createdAt:new Date().toISOString(),history:[]};
+    if(deal.stage===stageByMeaning('new'))assignLeadByRoundRobin(deal);
+    addEntityHistory(deal,'Rascunho confirmado','Oportunidade criada pelo fluxo Cole e organize');
+    deals.push(deal);
+  }
+  saveDeals(deals);
+  const activities=getActivities();activities.push({id:'activity-'+Date.now(),title:draft.next,type:'Tarefa',client:client.name,date:draft.date,time:draft.time,note:existingOpenDeal?'Atualização adicionada a partir de conversa confirmada':'Criada a partir de conversa confirmada',owner:appState.currentUser?.name,done:false});saveActivities(activities);
+  alert(existingOpenDeal?'Rascunho confirmado. A negociação em aberto desse cliente foi atualizada.':'Rascunho confirmado. Cliente, oportunidade e próxima ação foram organizados.');
+  pendingOrganizeReading=null;event.target.reset();event.target.classList.add('hidden');$('#organizeConfirmation').classList.add('hidden');$('#draftPlaceholder').classList.remove('hidden');$('#conversationText').value='';clearOrganizeDraftText();showView('today');
+};
 $('#proposalForm').onsubmit=event=>{event.preventDefault();const proposal=Object.fromEntries(new FormData(event.target));proposal.id='proposal-'+Date.now();proposal.value=Number(proposal.value);proposal.createdAt=new Date().toISOString();const proposals=getProposals();proposals.push(proposal);saveProposals(proposals);if(proposal.dealId){const deals=getDeals(),deal=deals.find(item=>item.id===proposal.dealId);if(deal){deal.stage=stageByMeaning('proposal');addEntityHistory(deal,'Proposta criada',proposal.title);saveDeals(deals)}}closeProposalModal();showView('proposals')};
 $('#receiptForm').onsubmit=event=>{event.preventDefault();const form=Object.fromEntries(new FormData(event.target)),deals=getDeals(),deal=deals.find(item=>item.id===form.dealId);if(!deal)return;const wasReceived=deal.paymentStatus==='received';applyReceiptRules(deal,form);addEntityHistory(deal,'Recebimento atualizado',`${formatMoney(deal.receivedAmount)} recebido · Status ${deal.paymentStatus}`);saveDeals(deals);closeReceiptModal();renderReceipts();if(!wasReceived&&deal.paymentStatus==='received')showMicroCelebration('payment',formatMoney(deal.receivedAmount))};
 $('#userForm').onsubmit=async event=>{event.preventDefault();const form=Object.fromEntries(new FormData(event.target)),users=getUsers(),email=form.email.trim().toLowerCase();if(users.some(user=>user.email.toLowerCase()===email)){alert('Já existe um usuário com este e-mail.');return}const salt=createSalt();users.push({id:'user-'+Date.now(),name:form.name.trim(),email,salt,passwordHash:await derivePassword(form.password,salt),profile:form.profile,visibility:form.visibility,status:form.status,createdAt:new Date().toISOString(),createdBy:appState.currentUser?.id});saveUsers(users);closeUserModal();renderTeam();syncRankingAccess()};

@@ -1,6 +1,6 @@
 export const SYNC_META_KEY='niviontech_sync_meta';
 export const SYNC_DEVICE_KEY='niviontech_device_id';
-const EXCLUDED_KEYS=new Set([SYNC_META_KEY,SYNC_DEVICE_KEY,'niviontech_last_backup']);
+const EXCLUDED_KEYS=new Set([SYNC_META_KEY,SYNC_DEVICE_KEY,'niviontech_last_backup','niviontech_local_organize_draft_text']);
 
 export function collectSyncStorage(storage){
   const snapshot={};
