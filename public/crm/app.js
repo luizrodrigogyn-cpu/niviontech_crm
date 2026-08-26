@@ -1,7 +1,7 @@
 import {authDomain} from './modules/auth.js';
 import {onboardingDomain} from './modules/onboarding.js';
 import {pipelineDomain,validateNegotiation,applyWonDealRules,findStaleDeals,getStaleDealDays,saveStaleDealDays,calculateDealHealth} from './modules/pipeline.js';
-import {clientsDomain,findSimilarClient,mergeClientData} from './modules/clients.js';
+import {clientsDomain,mergeClientData,validateClientRegistration} from './modules/clients.js';
 import {activitiesDomain,todayISO,formatDate,rankTodayActivities} from './modules/activities.js';
 import {proposalsDomain,proposalStatusLabel} from './modules/proposals.js';
 import {receiptsDomain,applyReceiptRules,createProvisionalReceipt} from './modules/receipts.js';
@@ -457,7 +457,7 @@ document.querySelectorAll('[data-activity-filter]').forEach(button=>button.oncli
 $('#proposalSearch').oninput=renderProposals;
 document.querySelectorAll('[data-proposal-filter]').forEach(button=>button.onclick=()=>{appState.activeProposalFilter=button.dataset.proposalFilter;document.querySelectorAll('[data-proposal-filter]').forEach(item=>item.classList.toggle('active',item===button));renderProposals()});
 $('#dealForm').onsubmit=event=>{event.preventDefault();const deal=Object.fromEntries(new FormData(event.target));deal.id='deal-'+Date.now();deal.value=Number(deal.value);deal.createdAt=new Date().toISOString();deal.ownerRole=appState.currentUser?.profile||'Proprietário/Admin';deal.history=[];if(deal.stage===stageByMeaning('new'))assignLeadByRoundRobin(deal);const deals=getDeals();deals.push(deal);saveDeals(deals);closeDealModal();showView('pipeline')};
-$('#clientForm').onsubmit=event=>{event.preventDefault();const client=Object.fromEntries(new FormData(event.target)),match=findSimilarClient(client,getClients());if(match){openClientMergeModal(client,match);return}completeClientRegistration(client)};
+$('#clientForm').onsubmit=event=>{event.preventDefault();const client=Object.fromEntries(new FormData(event.target)),validation=validateClientRegistration(client,getClients());if(!validation.valid){openClientMergeModal(client,validation.duplicate);return}completeClientRegistration(client)};
 $('#mergeClientConfirm').onclick=confirmClientMerge;
 $('#createClientAnyway').onclick=createSimilarClientAnyway;
 $('#cancelClientMerge').onclick=closeClientMergeModal;

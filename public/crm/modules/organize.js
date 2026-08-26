@@ -23,8 +23,11 @@ export function analyzeConversationText(text,{now=new Date(),newStage='new',prop
   const urgency=/com urg[eê]ncia|urgente|prioridade/i.test(text)?'high':urgencyHits.length?'attention':'normal';
   const sentenceSafe=text.replace(/(\d)\.(?=\d{3}(?:\D|$))/g,'$1__THOUSANDS_DOT__');
   const firstSentence=(sentenceSafe.split(/[.!?\n]/).find(part=>part.trim())?.trim()||'').replaceAll('__THOUSANDS_DOT__','.');
-  const companyMatch=text.match(/(?:empresa|cliente|contato)\s+(.+?)(?=\s+(?:pediu|quer|solicitou|precisa|gostaria|informou|disse|deseja)\b|[,.;\n]|$)/i);
-  const client=companyMatch?.[1]||firstSentence.split(/\s+(?:pediu|quer|solicitou|precisa|gostaria)\s+/i)[0].replace(/^(oi|olá|bom dia|boa tarde),?\s*/i,'').slice(0,60)||'Cliente a confirmar';
+  const actionPattern='pediu|quer|solicitou|precisa|gostaria|informou|disse|deseja';
+  const cleanSubject=value=>String(value||'').replace(/^(oi|olá|bom dia|boa tarde),?\s*/i,'').replace(/^(o|a)\s+(cliente|contato)\s+/i,'').trim().slice(0,60);
+  const subjectMatch=firstSentence.match(new RegExp(`^(.+?)\\s+(?:${actionPattern})\\b`,'i'));
+  const companyMatch=text.match(new RegExp(`(?:empresa|cliente|contato)\\s+(.+?)(?=\\s+(?:${actionPattern})\\b|[,.;\\n]|$)`,'i'));
+  const client=cleanSubject(subjectMatch?.[1])||cleanSubject(companyMatch?.[1])||cleanSubject(firstSentence)||'Cliente a confirmar';
   const recognizedDate=dateFromText(text,now),timeMatch=text.match(/(?:às|as)\s*(\d{1,2})(?::|h)(\d{2})?/i),time=timeMatch?`${timeMatch[1].padStart(2,'0')}:${(timeMatch[2]||'00').padStart(2,'0')}`:'09:00';
   const isProposal=/proposta|orçamento/i.test(text),next=isProposal?'Preparar e enviar proposta':urgency==='high'?'Retornar contato com prioridade':'Realizar retorno ao cliente';
   const details=[firstSentence,email&&`E-mail: ${email}`,phone&&`Telefone: ${phone}`,urgency!=='normal'&&`Urgência: ${urgency==='high'?'alta':'atenção'}`].filter(Boolean);
