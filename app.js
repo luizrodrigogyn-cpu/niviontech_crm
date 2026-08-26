@@ -23,20 +23,36 @@ const PROPOSALS_KEY='niviontech_proposals';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
 
 function createStore(key,initialData,{normalize,afterSave}={}){
+  // Cache em memória: evita reler e reprocessar (JSON.parse + normalize) o localStorage inteiro
+  // a cada chamada de get(). Antes disso, uma única renderização de tela (ex.: funil ou clientes)
+  // podia repetir esse parse dezenas de vezes (uma por card, dentro de cálculos como saúde da
+  // negociação), tornando a busca perceptivelmente mais lenta conforme os dados cresciam.
+  // O cache é sempre atualizado em save() e nunca fica desatualizado dentro da mesma aba: toda
+  // escrita direta no localStorage feita fora daqui (restauração de backup, sincronização com a
+  // nuvem) é sempre seguida de location.reload(), que reinicia esse estado do zero.
+  let cache=null,cached=false;
   return{
     get(){
+      if(cached)return cache;
       try{
         const data=JSON.parse(localStorage.getItem(key))||initialData;
-        return normalize?normalize(data):data;
+        cache=normalize?normalize(data):data;
       }catch{
-        return initialData;
+        cache=initialData;
       }
+      cached=true;
+      return cache;
     },
     save(data){
       localStorage.setItem(key,JSON.stringify(data));
+      cache=data;cached=true;
       if(afterSave)afterSave(data);
     }
   };
+}
+function debounce(fn,wait=180){
+  let timer=null;
+  return(...args)=>{clearTimeout(timer);timer=setTimeout(()=>fn(...args),wait)};
 }
 const $=selector=>document.querySelector(selector);
 
@@ -564,12 +580,12 @@ document.querySelectorAll('[data-close-client-drawer]').forEach(button=>button.o
 $('#undoMove').onclick=undoLastMove;$('#dismissUndo').onclick=hideUndo;
 $('#newButton').onclick=()=>{if(appState.currentView==='clients')openClientModal();else if(appState.currentView==='activities'||appState.currentView==='today')openActivityModal();else if(appState.currentView==='proposals')openProposalModal();else if(appState.currentView==='team')openUserModal();else{if(appState.currentView!=='pipeline')showView('pipeline');openDealModal()}};
 $('#todayAddActivity').onclick=openActivityModal;
-$('#dealSearch').oninput=event=>renderPipeline(event.target.value);
-$('#clientSearch').oninput=renderClients;
+$('#dealSearch').oninput=debounce(event=>renderPipeline(event.target.value));
+$('#clientSearch').oninput=debounce(renderClients);
 document.querySelectorAll('[data-client-filter]').forEach(button=>button.onclick=()=>{appState.activeClientFilter=button.dataset.clientFilter;document.querySelectorAll('[data-client-filter]').forEach(item=>item.classList.toggle('active',item===button));renderClients()});
-$('#activitySearch').oninput=renderActivities;
+$('#activitySearch').oninput=debounce(renderActivities);
 document.querySelectorAll('[data-activity-filter]').forEach(button=>button.onclick=()=>{appState.activeActivityFilter=button.dataset.activityFilter;document.querySelectorAll('[data-activity-filter]').forEach(item=>item.classList.toggle('active',item===button));renderActivities()});
-$('#proposalSearch').oninput=renderProposals;
+$('#proposalSearch').oninput=debounce(renderProposals);
 document.querySelectorAll('[data-proposal-filter]').forEach(button=>button.onclick=()=>{appState.activeProposalFilter=button.dataset.proposalFilter;document.querySelectorAll('[data-proposal-filter]').forEach(item=>item.classList.toggle('active',item===button));renderProposals()});
 $('#dealForm').onsubmit=event=>{event.preventDefault();const deal=Object.fromEntries(new FormData(event.target));deal.id='deal-'+Date.now();deal.value=Number(deal.value);deal.createdAt=new Date().toISOString();deal.ownerRole=appState.currentUser?.profile||'Proprietário/Admin';deal.history=[];if(deal.stage===stageByMeaning('new'))assignLeadByRoundRobin(deal);const deals=getDeals();deals.push(deal);saveDeals(deals);closeDealModal();showView('pipeline')};
 $('#clientForm').onsubmit=event=>{event.preventDefault();const client=Object.fromEntries(new FormData(event.target)),validation=validateClientRegistration(client,getClients());if(!validation.valid){openClientMergeModal(client,validation.duplicate);return}completeClientRegistration(client)};
@@ -842,7 +858,7 @@ function installGlobalSearch(){
   $('#globalSearchTrigger').addEventListener('click',openGlobalSearch);
   $('#closeGlobalSearch').addEventListener('click',closeGlobalSearch);
   $('#globalSearchBackdrop').addEventListener('click',closeGlobalSearch);
-  $('#globalSearchInput').addEventListener('input',event=>renderGlobalSearch(event.target.value));
+  $('#globalSearchInput').addEventListener('input',debounce(event=>renderGlobalSearch(event.target.value)));
   $('#globalSearchInput').addEventListener('keydown',event=>{if(event.key==='Enter')$('#globalSearchResults [data-search-target]')?.click()});
   document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openGlobalSearch()}else if(event.key==='Escape')closeGlobalSearch()});
   const refresh=()=>{$('#globalSearchTrigger').hidden=!appState.currentUser};
