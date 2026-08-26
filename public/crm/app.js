@@ -8,7 +8,7 @@ import {receiptsDomain,applyReceiptRules,createProvisionalReceipt} from './modul
 import {reportsDomain} from './modules/reports.js';
 import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
-import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js';
+import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js?v=20260826-3';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
 
@@ -139,7 +139,11 @@ async function bootstrapCloudSync(){
     if(result.localOnly){setCloudSyncStatus('Dados protegidos neste dispositivo','warning');return{reloading:false}}
     cloudSyncState.enabled=true;
     const localSnapshot=collectSyncStorage(localStorage),decision=resolveStartupSync({localSnapshot,cloudSnapshot:result.snapshot,meta:readSyncMeta()});
-    if(decision.action==='download'){replaceSyncStorage(localStorage,result.snapshot.payload);saveSyncMeta(result.snapshot);location.reload();return{reloading:true}}
+    if(decision.action==='download'){
+      replaceSyncStorage(localStorage,result.snapshot.payload);
+      saveSyncMeta(result.snapshot);
+      setCloudSyncStatus('Dados recuperados da nuvem privada','success');
+    }
     if(decision.action==='upload')await uploadCloudSnapshot();
     else if(decision.action==='accept'){saveSyncMeta(result.snapshot);setCloudSyncStatus('Tudo salvo na nuvem privada','success')}
     else if(decision.action==='conflict'){cloudSyncState.conflict=result.snapshot;setCloudSyncStatus('Há duas versões aguardando sua escolha','warning')}
@@ -546,7 +550,11 @@ $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
-bootstrapCloudSync().then(result=>{if(!result.reloading)initialize()});
+bootstrapCloudSync().then(result=>{
+  if(result.reloading)return;
+  initialize();
+  requestAnimationFrame(()=>document.body.classList.remove('app-booting'));
+});
 renderMenuNewBadges();
 function renderRoleFocus(){
   const box=$('#roleFocus');
