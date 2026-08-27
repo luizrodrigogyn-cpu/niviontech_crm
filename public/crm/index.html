@@ -67,7 +67,7 @@
       <p class="nav-title">RELACIONAMENTO</p>
       <nav><button data-view="clients"><i>▣</i>Clientes</button></nav>
       <p class="nav-title">INTELIGÊNCIA</p>
-      <nav><button data-view="reports"><i>⌁</i>Relatórios</button><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
+      <nav><button data-view="reports"><i>⌁</i>Relatórios</button><button data-view="orbitCoach"><i>✦</i>Orbit IA</button><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
       <p class="nav-title manager-only">ADMINISTRAÇÃO</p>
       <nav><button class="manager-only" data-view="team"><i>◎</i>Equipe e acessos</button><button class="admin-only" data-view="templates"><i>▥</i>Modelos de funil</button></nav>
       <div class="sidebar-footer">
@@ -115,6 +115,52 @@
         </div>
         <div class="activities-toolbar"><div class="activity-tabs"><button class="active" data-activity-filter="pending">Pendentes</button><button data-activity-filter="today">Hoje</button><button data-activity-filter="done">Concluídas</button><button data-activity-filter="all">Todas</button></div><label>⌕<input id="activitySearch" placeholder="Buscar atividade ou cliente"></label></div>
         <div class="agenda-layout"><section class="agenda-list" id="activitiesList"></section><aside class="agenda-orbit"><span class="orbit-mini">O</span><p class="overline">ORBIT OBSERVA</p><h3 id="agendaInsight">Sua agenda está organizada.</h3><p id="agendaInsightText">Continue registrando os próximos passos das oportunidades.</p><button data-view="pipeline">Ver oportunidades</button></aside></div>
+      </div>
+      <div class="module-view orbit-coach-view hidden" id="orbitCoachView">
+        <div class="module-heading orbit-coach-heading">
+          <div><p class="overline">ORBIT IA · COACH COMERCIAL</p><h1>Prepare, pratique e venda com mais clareza.</h1><p>Treine uma conversa usando o contexto das suas oportunidades e receba uma avaliação objetiva antes da reunião real.</p></div>
+          <div class="orbit-coach-status"><span>O</span><div><small>MODO ATUAL</small><strong>Treinamento seguro</strong></div></div>
+        </div>
+        <section class="orbit-coach-start" id="orbitCoachStart">
+          <article class="panel-card coach-setup-card">
+            <div class="coach-card-title"><span>01</span><div><p class="overline">CONTEXTO</p><h3>Qual conversa vamos preparar?</h3></div></div>
+            <label>Oportunidade<select id="coachDealSelect"><option value="">Cenário de treinamento livre</option></select></label>
+            <div class="coach-context-preview" id="coachContextPreview"></div>
+          </article>
+          <article class="panel-card coach-setup-card">
+            <div class="coach-card-title"><span>02</span><div><p class="overline">DESAFIO</p><h3>Escolha o perfil do cliente</h3></div></div>
+            <div class="coach-personas" id="coachPersonas">
+              <button class="active" data-coach-persona="analytical"><strong>Analítico</strong><small>Pede dados, comparações e segurança.</small></button>
+              <button data-coach-persona="skeptical"><strong>Cético</strong><small>Questiona valor, risco e resultados.</small></button>
+              <button data-coach-persona="urgent"><strong>Com pressa</strong><small>Quer objetividade e próximos passos.</small></button>
+            </div>
+          </article>
+          <article class="panel-card coach-setup-card coach-goal-card">
+            <div class="coach-card-title"><span>03</span><div><p class="overline">OBJETIVO</p><h3>O que deseja praticar?</h3></div></div>
+            <select id="coachGoal"><option value="diagnosis">Reunião de diagnóstico</option><option value="presentation">Apresentação da solução</option><option value="objection">Tratamento de objeções</option><option value="closing">Fechamento e próximo passo</option></select>
+            <button type="button" class="primary wide" id="startCoachTraining">Iniciar treinamento</button>
+            <small class="coach-privacy">✓ Este treino não ativa o microfone nem grava uma reunião real.</small>
+          </article>
+        </section>
+        <section class="orbit-training hidden" id="orbitTraining">
+          <aside class="coach-script panel-card">
+            <header><div><p class="overline">ROTEIRO DA CONVERSA</p><h3 id="coachScriptTitle">Diagnóstico comercial</h3></div><span id="coachProgress">0%</span></header>
+            <div id="coachChecklist"></div>
+            <button type="button" class="secondary wide" id="finishCoachTraining">Encerrar e avaliar</button>
+          </aside>
+          <section class="coach-conversation panel-card">
+            <header><span class="coach-avatar">O</span><div><p class="overline">SIMULAÇÃO COM ORBIT IA</p><h3 id="coachClientName">Cliente simulado</h3></div><b id="coachTurnCount">0 interações</b></header>
+            <div class="coach-messages" id="coachMessages" aria-live="polite"></div>
+            <form id="coachMessageForm"><label for="coachMessage">Responda como falaria na reunião</label><div><textarea id="coachMessage" rows="3" placeholder="Escreva sua fala para o cliente..." required></textarea><button class="primary" type="submit">Enviar</button></div></form>
+          </section>
+        </section>
+        <section class="coach-result hidden" id="coachResult">
+          <div class="coach-result-hero"><span>O</span><div><p class="overline">AVALIAÇÃO DO ORBIT IA</p><h2 id="coachResultTitle">Treinamento concluído</h2><p id="coachResultSummary"></p></div><strong id="coachOverallScore">0</strong></div>
+          <div class="coach-score-grid" id="coachScoreGrid"></div>
+          <div class="coach-result-grid"><article class="panel-card"><p class="overline">VOCÊ FOI BEM EM</p><div id="coachStrengths"></div></article><article class="panel-card"><p class="overline">PRÓXIMO TREINO</p><div id="coachImprovements"></div></article></div>
+          <button type="button" class="primary" id="restartCoachTraining">Fazer novo treinamento</button>
+        </section>
+        <section class="coach-history panel-card"><header><div><p class="overline">EVOLUÇÃO</p><h3>Histórico de treinamentos</h3></div><small>Somente nesta empresa</small></header><div id="coachHistoryList"></div></section>
       </div>
       <div class="module-view hidden" id="organizeView">
         <div class="module-heading"><div><p class="overline">ORBIT · ASSISTENTE LOCAL</p><h1>Cole e organize</h1><p>Cole uma conversa. O Orbit prepara um rascunho para você revisar antes de salvar.</p></div><span class="local-badge">Processamento local</span></div>

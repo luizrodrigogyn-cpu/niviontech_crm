@@ -13,7 +13,7 @@ import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snap
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
 
 const STORAGE={owner:'niviontech_owner',company:'niviontech_company'};
-const NEW_MENU_ITEMS=['organize'];
+const NEW_MENU_ITEMS=['orbitCoach','organize'];
 const SESSION='niviontech_session';
 const USERS_KEY='niviontech_users';
 const PIPELINE_KEY='niviontech_pipeline';
@@ -275,20 +275,20 @@ function showView(view){
   const pipeline=view==='pipeline';
   const clients=view==='clients';
   const activities=view==='activities';
-  const organize=view==='organize',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
-  const secondary=pipeline||clients||activities||organize||ranking||proposals||receipts||settings||team||templates||reports;
+  const organize=view==='organize',orbitCoach=view==='orbitCoach',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
+  const secondary=pipeline||clients||activities||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
   $('#todayView').classList.toggle('hidden',secondary);
   $('#pipelineView').classList.toggle('hidden',!pipeline);
   $('#clientsView').classList.toggle('hidden',!clients);
   $('#activitiesView').classList.toggle('hidden',!activities);
-  $('#organizeView').classList.toggle('hidden',!organize);$('#proposalsView').classList.toggle('hidden',!proposals);$('#receiptsView').classList.toggle('hidden',!receipts);$('#settingsView').classList.toggle('hidden',!settings);
+  $('#organizeView').classList.toggle('hidden',!organize);$('#orbitCoachView').classList.toggle('hidden',!orbitCoach);$('#proposalsView').classList.toggle('hidden',!proposals);$('#receiptsView').classList.toggle('hidden',!receipts);$('#settingsView').classList.toggle('hidden',!settings);
   $('#rankingView').classList.toggle('hidden',!ranking);
   $('#teamView').classList.toggle('hidden',!team);
   $('#templatesView').classList.toggle('hidden',!templates);
   $('#reportsView').classList.toggle('hidden',!reports);
-  const titles={today:['Dashboard','Visão geral do seu comercial'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  const titles={today:['Dashboard','Visão geral do seu comercial'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
-  $('#newButton').style.display=['organize','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').style.display=['orbitCoach','organize','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
   $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('.sidebar').classList.remove('open');
@@ -302,6 +302,7 @@ function showView(view){
   if(ranking)renderRanking();
   if(templates)renderTemplates();
   if(reports)renderReports();
+  if(orbitCoach)renderOrbitCoach();
   if(view==='today'){renderDateCardIdentity();renderTodayActivities()}
 }
 
@@ -511,6 +512,43 @@ function exportPipelineExcel(){
   const workbook=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif}th{background:#172445;color:#fff;font-weight:700}th,td{padding:8px 10px;border:1px solid #ccd3df;white-space:nowrap}tr:nth-child(even){background:#f3f6fa}</style></head><body><h2>NivionTech CRM - Funil de vendas</h2><p>Exportado em ${new Date().toLocaleString('pt-BR')} · ${deals.length} oportunidades</p>${table}</body></html>`;
   downloadFile(`niviontech-funil-${todayISO()}.xls`,'\ufeff'+workbook,'application/vnd.ms-excel;charset=utf-8');
 }
+
+const COACH_HISTORY_KEY='niviontech_orbit_ia_training_history';
+const coachPersonas={
+  analytical:{name:'Cliente analítico',opening:'Antes de avançarmos, preciso entender exatamente como isso funciona e quais resultados podemos medir.',followups:['Quais indicadores mostram que essa solução realmente funciona?','Como seria a implantação na prática?','Que riscos eu devo considerar antes de decidir?']},
+  skeptical:{name:'Cliente cético',opening:'Já ouvi promessas parecidas antes. Por que eu deveria acreditar que desta vez será diferente?',followups:['Isso parece caro. Onde está o retorno?','O que acontece se a equipe não aderir?','Por que eu não deveria continuar como estou hoje?']},
+  urgent:{name:'Cliente com pressa',opening:'Tenho pouco tempo. Diga diretamente qual problema vocês resolvem e o que eu preciso fazer depois.',followups:['Qual é o principal benefício para mim?','Em quanto tempo conseguimos começar?','Qual é o próximo passo objetivo?']}
+};
+const coachCriteria=[
+  {id:'context',label:'Abertura e contexto',keywords:['objetivo','agenda','tempo','contexto','conversa']},
+  {id:'diagnosis',label:'Diagnóstico das necessidades',keywords:['como','qual','problema','desafio','impacto','hoje','processo']},
+  {id:'value',label:'Demonstração de valor',keywords:['resultado','benefício','economia','ganho','valor','melhorar','reduzir']},
+  {id:'objection',label:'Tratamento de objeções',keywords:['entendo','faz sentido','risco','retorno','segurança','prova','exemplo']},
+  {id:'next',label:'Próximo passo',keywords:['próximo','agendar','data','reunião','enviar','combinar','quando']},
+  {id:'listening',label:'Escuta ativa',keywords:['você','entendi','correto','confirma','conte','explique','prioridade']}
+];
+let coachState={persona:'analytical',goal:'diagnosis',dealId:'',turns:[],startedAt:null};
+function coachHistory(){try{return JSON.parse(localStorage.getItem(COACH_HISTORY_KEY))||[]}catch{return[]}}
+function saveCoachHistory(items){localStorage.setItem(COACH_HISTORY_KEY,JSON.stringify(items.slice(0,20)))}
+function selectedCoachDeal(){return getDeals().find(deal=>deal.id===$('#coachDealSelect').value)}
+function renderCoachContext(){const deal=selectedCoachDeal(),target=$('#coachContextPreview');if(!target)return;target.innerHTML=deal?`<span>${escapeHtml(deal.client)}</span><strong>${escapeHtml(deal.title)}</strong><p>${formatMoney(deal.value)} · ${escapeHtml(deal.next||'Próximo passo não definido')}</p>`:'<span>SIMULAÇÃO LIVRE</span><strong>Treino sem oportunidade vinculada</strong><p>Pratique sua abordagem sem alterar os dados do CRM.</p>'}
+function renderCoachHistory(){const target=$('#coachHistoryList'),items=coachHistory();if(!target)return;target.innerHTML=items.length?items.map(item=>`<article><span>${item.score}</span><div><strong>${escapeHtml(item.client)}</strong><p>${escapeHtml(item.goal)} · ${new Date(item.date).toLocaleDateString('pt-BR')}</p></div><small>${item.turns} interações</small></article>`).join(''):orbitEmptyState('Seu progresso começa aqui','Conclua o primeiro treino para acompanhar sua evolução.','coach-empty')}
+function renderOrbitCoach(){const select=$('#coachDealSelect');if(!select)return;const selected=select.value;select.innerHTML='<option value="">Cenário de treinamento livre</option>'+dealsVisibleToCurrentUser(getDeals()).filter(deal=>deal.status!=='won'&&deal.status!=='lost').map(deal=>`<option value="${escapeHtml(deal.id)}">${escapeHtml(deal.client)} — ${escapeHtml(deal.title)}</option>`).join('');select.value=selected;renderCoachContext();renderCoachHistory()}
+function coachChecklistMarkup(){return coachCriteria.map(item=>`<article data-coach-check="${item.id}"><i>✓</i><div><strong>${item.label}</strong><small>Aguardando evidência na conversa</small></div></article>`).join('')}
+function startCoachTraining(){coachState={persona:coachState.persona,goal:$('#coachGoal').value,dealId:$('#coachDealSelect').value,turns:[],startedAt:new Date().toISOString()};const persona=coachPersonas[coachState.persona],deal=selectedCoachDeal();$('#orbitCoachStart').classList.add('hidden');$('#coachResult').classList.add('hidden');$('#orbitTraining').classList.remove('hidden');$('#coachClientName').textContent=deal?.client||persona.name;$('#coachScriptTitle').textContent=$('#coachGoal').selectedOptions[0].textContent;$('#coachChecklist').innerHTML=coachChecklistMarkup();$('#coachMessages').innerHTML=`<article class="coach-message client"><span>${escapeHtml((deal?.client||persona.name).charAt(0))}</span><div><small>CLIENTE</small><p>${escapeHtml(persona.opening)}</p></div></article>`;updateCoachProgress();$('#coachMessage').focus()}
+function coachText(){return coachState.turns.join(' ').toLocaleLowerCase('pt-BR')}
+function criterionScore(criterion){const text=coachText(),matches=criterion.keywords.filter(word=>text.includes(word)).length,turnBonus=Math.min(18,coachState.turns.length*3);return Math.min(100,28+matches*13+turnBonus)}
+function updateCoachProgress(){const scores=coachCriteria.map(criterionScore),progress=Math.round(scores.reduce((sum,value)=>sum+value,0)/scores.length);$('#coachProgress').textContent=`${progress}%`;$('#coachTurnCount').textContent=`${coachState.turns.length} ${coachState.turns.length===1?'interação':'interações'}`;coachCriteria.forEach((criterion,index)=>{const row=document.querySelector(`[data-coach-check="${criterion.id}"]`),score=scores[index];row?.classList.toggle('done',score>=55);const detail=row?.querySelector('small');if(detail)detail.textContent=score>=55?'Abordado durante a conversa':'Ainda pode ser explorado'})}
+function coachReply(){const persona=coachPersonas[coachState.persona],index=Math.min(coachState.turns.length-1,persona.followups.length-1);return persona.followups[index]||'Entendi. O que você recomenda como próximo passo?'}
+function submitCoachMessage(event){event.preventDefault();const input=$('#coachMessage'),message=input.value.trim();if(!message)return;coachState.turns.push(message);$('#coachMessages').insertAdjacentHTML('beforeend',`<article class="coach-message seller"><span>${escapeHtml((appState.currentUser?.name||'V').charAt(0))}</span><div><small>VOCÊ</small><p>${escapeHtml(message)}</p></div></article><article class="coach-message client"><span>${escapeHtml((selectedCoachDeal()?.client||coachPersonas[coachState.persona].name).charAt(0))}</span><div><small>CLIENTE</small><p>${escapeHtml(coachReply())}</p></div></article>`);input.value='';updateCoachProgress();$('#coachMessages').scrollTop=$('#coachMessages').scrollHeight}
+function finishCoachTraining(){if(!coachState.turns.length){$('#coachMessage').focus();return}const scores=coachCriteria.map(criterion=>({...criterion,score:criterionScore(criterion)})),overall=Math.round(scores.reduce((sum,item)=>sum+item.score,0)/scores.length),deal=selectedCoachDeal(),strengths=[...scores].sort((a,b)=>b.score-a.score).slice(0,2),improvements=[...scores].sort((a,b)=>a.score-b.score).slice(0,2);$('#orbitTraining').classList.add('hidden');$('#coachResult').classList.remove('hidden');$('#coachOverallScore').textContent=overall;$('#coachResultTitle').textContent=overall>=80?'Apresentação consistente':overall>=60?'Boa base para evoluir':'Há espaço para praticar';$('#coachResultSummary').textContent=`Você concluiu ${coachState.turns.length} interações. O Orbit IA identificou os pontos abordados e montou seu próximo foco de treinamento.`;$('#coachScoreGrid').innerHTML=scores.map(item=>`<article><div><span>${item.label}</span><strong>${item.score}%</strong></div><i><b style="width:${item.score}%"></b></i></article>`).join('');$('#coachStrengths').innerHTML=strengths.map(item=>`<p><span>✓</span><strong>${item.label}</strong><small>Continue usando essa abordagem.</small></p>`).join('');$('#coachImprovements').innerHTML=improvements.map(item=>`<p><span>↗</span><strong>${item.label}</strong><small>Inclua perguntas e uma confirmação clara.</small></p>`).join('');const history=coachHistory();history.unshift({id:crypto.randomUUID(),score:overall,client:deal?.client||coachPersonas[coachState.persona].name,goal:$('#coachGoal').selectedOptions[0].textContent,turns:coachState.turns.length,date:new Date().toISOString(),userId:appState.currentUser?.id||''});saveCoachHistory(history);renderCoachHistory()}
+function restartCoachTraining(){$('#coachResult').classList.add('hidden');$('#orbitTraining').classList.add('hidden');$('#orbitCoachStart').classList.remove('hidden');renderOrbitCoach()}
+$('#coachDealSelect').onchange=renderCoachContext;
+document.querySelectorAll('[data-coach-persona]').forEach(button=>button.onclick=()=>{coachState.persona=button.dataset.coachPersona;document.querySelectorAll('[data-coach-persona]').forEach(item=>item.classList.toggle('active',item===button))});
+$('#startCoachTraining').onclick=startCoachTraining;
+$('#coachMessageForm').onsubmit=submitCoachMessage;
+$('#finishCoachTraining').onclick=finishCoachTraining;
+$('#restartCoachTraining').onclick=restartCoachTraining;
 
 document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>showView(button.dataset.view));
 document.querySelectorAll('[data-close-modal]').forEach(button=>button.onclick=closeDealModal);
