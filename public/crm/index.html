@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260827-1">
+  <link rel="stylesheet" href="styles.css?v=20260827-2">
   <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
   <style>#appScreen h1{font-family:Manrope,sans-serif!important}</style>
   <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
@@ -121,6 +121,26 @@
           <div><p class="overline">ORBIT IA · COACH COMERCIAL</p><h1>Prepare, pratique e venda com mais clareza.</h1><p>Treine uma conversa usando o contexto das suas oportunidades e receba uma avaliação objetiva antes da reunião real.</p></div>
           <div class="orbit-coach-status"><span>O</span><div><small>MODO ATUAL</small><strong>Treinamento seguro</strong></div></div>
         </div>
+        <nav class="orbit-module-nav" aria-label="Módulos do Orbit IA">
+          <button class="active" data-orbit-module="train"><span>✦</span><div><strong>Treinar</strong><small>Pratique com o ICP da empresa</small></div></button>
+          <button data-orbit-module="prepare"><span>◇</span><div><strong>Preparar</strong><small>Planeje uma negociação real</small></div></button>
+          <button data-orbit-module="analyze"><span>≡</span><div><strong>Analisar</strong><small>Conversa vira memória e ação</small></div></button>
+        </nav>
+        <div data-orbit-panel="train">
+        <section class="icp-panel panel-card">
+          <header><div><p class="overline">DNA COMERCIAL</p><h3>Ensine ao Orbit como sua empresa vende</h3><p>Essas informações personalizam os cenários e permanecem privadas nesta empresa.</p></div><span id="icpStatus">Configurar ICP</span></header>
+          <form id="icpForm" class="icp-form">
+            <label>Segmentos atendidos<input name="segments" placeholder="Ex.: clínicas, escritórios, indústrias"></label>
+            <label>Cliente ideal<input name="idealCustomer" placeholder="Ex.: empresas com 10 a 50 funcionários"></label>
+            <label>Produtos e serviços<input name="products" placeholder="Ex.: CRM, implantação e treinamento"></label>
+            <label>Dores mais comuns<input name="pains" placeholder="Ex.: planilhas, perda de follow-up, falta de visibilidade"></label>
+            <label>Objeções frequentes<input name="objections" placeholder="Ex.: preço, tempo de implantação, adesão da equipe"></label>
+            <label>Palavras-chave<input name="keywords" placeholder="Ex.: produtividade, previsibilidade, controle"></label>
+            <label class="icp-wide">Diferenciais e provas<textarea name="proofs" rows="2" placeholder="Resultados, cases e argumentos que podem ser usados"></textarea></label>
+            <label class="icp-wide">O que o vendedor não pode prometer<textarea name="restrictions" rows="2" placeholder="Limites comerciais e afirmações proibidas"></textarea></label>
+            <button class="primary" type="submit">Salvar DNA comercial</button>
+          </form>
+        </section>
         <section class="orbit-coach-start" id="orbitCoachStart">
           <article class="panel-card coach-setup-card">
             <div class="coach-card-title"><span>01</span><div><p class="overline">CONTEXTO</p><h3>Qual conversa vamos preparar?</h3></div></div>
@@ -161,6 +181,20 @@
           <button type="button" class="primary" id="restartCoachTraining">Fazer novo treinamento</button>
         </section>
         <section class="coach-history panel-card"><header><div><p class="overline">EVOLUÇÃO</p><h3>Histórico de treinamentos</h3></div><small>Somente nesta empresa</small></header><div id="coachHistoryList"></div></section>
+        </div>
+        <div class="hidden" data-orbit-panel="prepare">
+          <section class="orbit-workflow-grid">
+            <article class="panel-card orbit-workflow-input"><p class="overline">ANTES DA REUNIÃO</p><h2>Prepare uma oportunidade</h2><p>O Orbit organiza o que o CRM já sabe e mostra o que ainda precisa ser descoberto.</p><label>Oportunidade<select id="prepareDealSelect"></select></label><button class="primary wide" id="prepareDealButton" type="button">Montar preparação</button></article>
+            <article class="panel-card orbit-workflow-output" id="prepareOutput"><span class="orbit-large">O</span><h3>Selecione uma oportunidade</h3><p>Você receberá contexto, perguntas, possíveis objeções e um próximo passo recomendado.</p></article>
+          </section>
+        </div>
+        <div class="hidden" data-orbit-panel="analyze">
+          <section class="orbit-workflow-grid">
+            <article class="panel-card orbit-workflow-input"><p class="overline">DEPOIS DO ATENDIMENTO</p><h2>Analisar conversa</h2><p>Cole as informações do atendimento. Tudo é processado localmente e nada muda sem sua confirmação.</p><label>Cliente<select id="analysisClientSelect"></select></label><label>Oportunidade<select id="analysisDealSelect"></select></label><label>Conversa ou anotação<textarea id="analysisText" rows="10" placeholder="Cole aqui a conversa, o resumo da ligação ou as anotações do vendedor..."></textarea></label><button class="primary wide" id="analyzeDealConversation" type="button">Analisar localmente</button></article>
+            <article class="panel-card orbit-workflow-output" id="analysisOutput"><span class="orbit-large">O</span><h3>A análise aparecerá aqui</h3><p>O Orbit identificará sinais comerciais, resumo, objeções e próximo passo para sua revisão.</p></article>
+          </section>
+          <section class="pending-roadmap panel-card"><header><div><p class="overline">PRÓXIMAS FASES</p><h3>Pendências que envolvem custo</h3></div><span>Planejadas</span></header><div><article><i>♫</i><strong>Transcrição de áudio</strong><small>Enviar gravações e gerar relatórios.</small></article><article><i>◉</i><strong>Treinamento por voz</strong><small>Conversa falada com cliente virtual.</small></article><article><i>⚡</i><strong>Coach ao vivo</strong><small>Sugestões durante reuniões reais.</small></article><article><i>⇄</i><strong>Integrações</strong><small>WhatsApp, Meet, Zoom e telefonia.</small></article></div></section>
+        </div>
       </div>
       <div class="module-view hidden" id="organizeView">
         <div class="module-heading"><div><p class="overline">ORBIT · ASSISTENTE LOCAL</p><h1>Cole e organize</h1><p>Cole uma conversa. O Orbit prepara um rascunho para você revisar antes de salvar.</p></div><span class="local-badge">Processamento local</span></div>
@@ -282,6 +316,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-<script type="module" src="app.js?v=20260826-37"></script>
+<script type="module" src="app.js?v=20260827-2"></script>
 </body>
 </html>
