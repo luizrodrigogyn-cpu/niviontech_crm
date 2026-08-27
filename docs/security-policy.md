@@ -3,6 +3,8 @@
 ## Autenticação e sessões
 
 - Todas as rotas `/api/auth/*` e `/api/sync/*` validam a sessão no servidor com Clerk.
+- Todo o pacote privado `/crm/*`, incluindo HTML, JavaScript, CSS e módulos, é bloqueado pelo Clerk antes de ser entregue.
+- A landing page `/` continua pública para apresentar o produto e iniciar o login.
 - O navegador nunca escolhe o `org_id`: ele é resolvido a partir do usuário Clerk autenticado.
 - Cada usuário pode manter no máximo três sessões ativas por padrão. Ao ultrapassar o limite, as sessões mais antigas são revogadas.
 - O CRM usa acesso sem senha por código de e-mail. Nenhuma senha é criada ou armazenada pelo aplicativo.
