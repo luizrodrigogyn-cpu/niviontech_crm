@@ -60,16 +60,14 @@
   <main id="appScreen" class="app hidden">
     <aside class="sidebar">
       <a class="logo brand-logo-compact tenant-brand" href="#" aria-label="Identidade da empresa"><span class="brand-symbol"><img id="sidebarCompanyLogo" src="assets/niviontech-symbol.png" alt=""></span><div class="tenant-brand-copy"><strong id="sidebarCompanyName">NivionTech</strong><b>NivionTech CRM</b></div></a>
-      <nav>
-        <button class="active" data-view="today"><i>⌂</i>Hoje</button>
-        <button data-view="pipeline"><i>◇</i>Funil</button>
-        <button data-view="clients"><i>▣</i>Clientes</button>
-        <button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button>
-      </nav>
-      <p class="nav-title">RECEITA</p>
-      <nav><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button><button data-view="reports"><i>⌁</i>Relatórios</button></nav>
+      <p class="nav-title">VISÃO GERAL</p>
+      <nav><button class="active" data-view="today"><i>⌂</i>Dashboard</button></nav>
+      <p class="nav-title">COMERCIAL</p>
+      <nav><button data-view="pipeline"><i>◇</i>Pipeline</button><button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button></nav>
+      <p class="nav-title">RELACIONAMENTO</p>
+      <nav><button data-view="clients"><i>▣</i>Clientes</button></nav>
       <p class="nav-title">INTELIGÊNCIA</p>
-      <nav><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
+      <nav><button data-view="reports"><i>⌁</i>Relatórios</button><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
       <p class="nav-title manager-only">ADMINISTRAÇÃO</p>
       <nav><button class="manager-only" data-view="team"><i>◎</i>Equipe e acessos</button><button class="admin-only" data-view="templates"><i>▥</i>Modelos de funil</button></nav>
       <div class="sidebar-footer">
@@ -79,7 +77,7 @@
       </div>
     </aside>
     <section class="workspace">
-      <header class="topbar"><div><button id="menuButton">☰</button><h2 id="pageTitle">Hoje</h2><small id="pageSubtitle">Seu resumo comercial</small></div><button class="primary" id="newButton">+ Novo</button></header>
+      <header class="topbar"><div class="topbar-context"><button id="menuButton" aria-label="Abrir menu">☰</button><h2 id="pageTitle">Dashboard</h2><small id="pageSubtitle">Visão geral do seu comercial</small></div><div class="topbar-tools"><button type="button" id="topbarSearch" class="topbar-search" aria-label="Buscar no CRM"><i>⌕</i><span>Buscar clientes, oportunidades, tarefas</span><kbd>Ctrl K</kbd></button><button type="button" id="topbarOrbit" class="topbar-orbit" aria-label="Abrir Orbit"><i>O</i><span>Orbit</span><b id="topbarOrbitCount">0</b></button><button class="primary" id="newButton">+ Nova oportunidade</button></div></header>
       <div class="dashboard" id="todayView">
         <div class="welcome"><div><p class="overline">BOM TRABALHO</p><h1 id="welcomeTitle">Olá.</h1><p>Estas são as prioridades para sua empresa vender melhor hoje.</p></div><div class="date-card" style="display:flex;flex-direction:column;align-items:flex-start"><small id="todayWeekday" style="display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase"></small><strong id="todayDate" style="display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance"></strong><div id="dateCardUser" style="width:100%;margin-top:15px;padding-top:12px;border-top:1px solid rgba(69,92,138,.12);color:var(--ink);font-size:11px;font-weight:800"></div></div></div>
         <section id="roleFocus" class="role-focus"></section>

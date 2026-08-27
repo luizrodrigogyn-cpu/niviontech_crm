@@ -208,3 +208,86 @@ button:not(.icon-button):not(.edit-card-title):not(.temperature-trigger),input,s
 #appScreen .sidebar-footer .profile strong{font-size:10px!important}
 #appScreen .sidebar-footer .profile small{font-size:7.5px!important}
 @media(max-height:780px) and (min-width:721px){#appScreen .sidebar>.tenant-brand{margin-bottom:10px;padding-block:6px}#appScreen .sidebar nav button{min-height:34px;padding-block:6px}#appScreen .sidebar .nav-title{margin-top:8px;padding-top:8px}.crm-support-contact{display:none!important}}
+
+/* Lovable Titanium Intelligence — camada visual integrada ao CRM funcional. */
+:root{
+  --ds-bg:#f5f4f0;
+  --ds-surface:#fbfcfd;
+  --ds-navy:#08162e;
+  --ds-navy-soft:#102441;
+  --ds-black:#080a0d;
+  --ds-titanium:#6f7884;
+  --ds-titanium-light:#c6ccd3;
+  --ds-line:#d9dee5;
+  --ds-blue:#255fa8;
+  --ds-green:#16835f;
+  --ds-gold:#b98018;
+  --ds-danger:#c94b54;
+  --ds-radius:14px;
+  --ds-shadow:0 10px 26px -18px rgba(8,22,46,.45),inset 0 1px 0 rgba(255,255,255,.78);
+  --ds-shadow-raised:0 18px 36px -22px rgba(8,22,46,.5),inset 0 1px 0 rgba(255,255,255,.86);
+  --ink:var(--ds-navy);
+  --muted:var(--ds-titanium);
+  --line:var(--ds-line);
+  --soft:#ececea;
+  --navy:var(--ds-navy);
+  --navy2:var(--ds-navy-soft);
+  --green:var(--ds-green);
+  --green-dark:var(--ds-navy);
+  --shadow:var(--ds-shadow-raised);
+}
+body{background:var(--ds-bg);color:#182437;font-family:Inter,Manrope,sans-serif;-webkit-font-smoothing:antialiased}
+#appScreen.app{grid-template-columns:256px minmax(0,1fr);background:var(--ds-bg)}
+#appScreen .sidebar{width:256px;padding:16px 12px;background:linear-gradient(165deg,var(--ds-navy-soft),var(--ds-navy) 58%,var(--ds-black));border-right:1px solid rgba(198,204,211,.14);box-shadow:10px 0 36px rgba(8,22,46,.1)}
+#appScreen .sidebar>.tenant-brand{margin:0 0 22px;padding:10px 11px;border-color:rgba(198,204,211,.14);border-radius:14px;background:rgba(255,255,255,.045);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+#appScreen .sidebar nav{display:grid;gap:4px}
+#appScreen .sidebar nav button{min-height:42px;padding:9px 11px;border-radius:10px;color:#c6ccd3;font-size:12px!important;font-weight:600;letter-spacing:-.01em;transition:background .2s ease,color .2s ease,transform .2s ease}
+#appScreen .sidebar nav button:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(1px)}
+#appScreen .sidebar nav button.active{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+#appScreen .sidebar nav button i{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.055);color:#dbe4ef;font-size:12px!important}
+#appScreen .sidebar nav button.active i{background:rgba(255,255,255,.12);color:#fff}
+#appScreen .sidebar .nav-title{margin:16px 11px 6px;padding-top:0;border:0;color:#8f9bac;font-size:9px!important;font-weight:700;letter-spacing:.16em}
+#appScreen .sidebar-footer{border-top:1px solid rgba(198,204,211,.11)}
+#appScreen .workspace{min-width:0;background-color:var(--ds-bg);background-image:linear-gradient(rgba(8,22,46,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(8,22,46,.025) 1px,transparent 1px);background-size:68px 68px}
+#appScreen .topbar{min-height:68px;padding:12px 24px;border-bottom:1px solid rgba(217,222,229,.88);background:rgba(251,252,253,.78);box-shadow:0 1px 2px rgba(8,22,46,.035);backdrop-filter:blur(16px) saturate(140%)}
+#appScreen .topbar h2{color:var(--ds-navy);font-family:Manrope,sans-serif;font-size:15px;font-weight:700;letter-spacing:-.02em}
+#appScreen .topbar small{color:var(--ds-titanium);font-size:10px}
+#appScreen .topbar .primary,#appScreen .primary{border-radius:10px;background:linear-gradient(150deg,var(--ds-navy-soft),var(--ds-navy) 58%,var(--ds-black));box-shadow:0 10px 22px -12px rgba(8,22,46,.7);color:#f5f4f0}
+#appScreen .topbar .primary{min-height:42px;padding:10px 16px}
+#appScreen .topbar-context{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:10px;min-width:150px}
+#appScreen .topbar-context #menuButton{grid-row:1/3}
+#appScreen .topbar-tools{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
+#appScreen .topbar-search{display:flex;align-items:center;gap:9px;width:min(34vw,430px);min-height:42px;padding:9px 11px;border:1px solid var(--ds-line);border-radius:12px;background:rgba(251,252,253,.86);color:var(--ds-titanium);box-shadow:0 1px 2px rgba(8,22,46,.04);cursor:pointer;text-align:left}
+#appScreen .topbar-search i{display:grid;place-items:center;width:22px;height:22px;color:var(--ds-navy);font-style:normal;font-size:16px}
+#appScreen .topbar-search span{overflow:hidden;flex:1;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+#appScreen .topbar-search kbd{padding:3px 6px;border:1px solid var(--ds-line);border-radius:6px;background:#ececea;color:var(--ds-titanium);font:600 8px Inter,sans-serif}
+#appScreen .topbar-orbit{display:flex;align-items:center;gap:7px;min-height:42px;padding:7px 10px;border:1px solid var(--ds-line);border-radius:12px;background:rgba(251,252,253,.86);color:var(--ds-navy);font-size:11px;font-weight:700;cursor:pointer}
+#appScreen .topbar-orbit i{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff,#c8dcf6 42%,#4978b8 72%,#08162e);color:#08162e;font-style:normal;font-size:10px;font-weight:900;box-shadow:0 4px 10px rgba(8,22,46,.16)}
+#appScreen .topbar-orbit b{display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--ds-danger);color:#fff;font-size:8px}
+#appScreen .dashboard,#appScreen .pipeline-view,#appScreen .clients-view,#appScreen .activities-view,#appScreen .module-view{max-width:1280px;margin:0 auto;padding:30px clamp(18px,3vw,38px) 48px}
+#appScreen h1,#appScreen h2,#appScreen h3{font-family:Manrope,sans-serif;letter-spacing:-.03em}
+#appScreen .welcome h1,#appScreen .pipeline-heading h1,#appScreen .clients-heading h1,#appScreen .activities-heading h1,#appScreen .module-heading h1{color:var(--ds-navy);font-weight:700}
+#appScreen .overline{color:var(--ds-titanium)!important;font-size:10px!important;font-weight:700!important;letter-spacing:.18em}
+#appScreen .metrics article,#appScreen .panel,#appScreen .panel-card,#appScreen .date-card,#appScreen .role-focus,#appScreen .pipeline-summary,#appScreen .clients-summary,#appScreen .activities-summary,#appScreen .module-summary,#appScreen .receipt-metrics article,#appScreen .report-metrics article{border:1px solid var(--ds-line);border-radius:16px;background:rgba(251,252,253,.88);box-shadow:var(--ds-shadow);backdrop-filter:blur(14px) saturate(125%)}
+#appScreen .metrics article{min-height:134px;padding:20px;transition:transform .2s ease,box-shadow .2s ease}
+#appScreen .metrics article:hover{transform:translateY(-2px);box-shadow:var(--ds-shadow-raised)}
+#appScreen .metrics article small,#appScreen .receipt-metrics article small,#appScreen .report-metrics article small{color:var(--ds-titanium);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+#appScreen .metrics article strong,#appScreen .receipt-metrics article strong,#appScreen .report-metrics article strong{color:var(--ds-navy);font-family:Manrope,sans-serif;font-weight:700}
+#appScreen .panel>header,#appScreen .panel-card>header{border-bottom-color:rgba(217,222,229,.8)}
+#appScreen .panel h3,#appScreen .panel-card h3{color:var(--ds-navy);font-weight:700}
+#appScreen .orbit-panel{color:#f5f4f0;background:radial-gradient(120% 90% at 20% 0%,#16304f,var(--ds-navy) 48%,var(--ds-black));border-color:rgba(198,204,211,.16);box-shadow:0 32px 64px -36px rgba(8,10,13,.65)}
+#appScreen .orbit-panel h3,#appScreen .orbit-panel strong{color:#f5f4f0}
+#appScreen .orbit-panel p{color:#c6ccd3}
+#appScreen input,#appScreen select,#appScreen textarea{border-color:var(--ds-line);background:rgba(251,252,253,.9);color:var(--ds-navy);outline:none}
+#appScreen input:focus,#appScreen select:focus,#appScreen textarea:focus{border-color:var(--ds-blue);box-shadow:0 0 0 3px rgba(37,95,168,.12)}
+#appScreen :focus-visible{outline:2px solid var(--ds-blue);outline-offset:2px}
+#appScreen .kanban-column,#appScreen .column{border-color:var(--ds-line);border-radius:16px;background:rgba(236,236,234,.58)}
+#appScreen .deal-card,#appScreen .client-card,#appScreen .activity-item,#appScreen .record-card{border-color:var(--ds-line);border-radius:14px;background:var(--ds-surface);box-shadow:0 1px 2px rgba(8,22,46,.06);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+#appScreen .deal-card:hover,#appScreen .client-card:hover,#appScreen .activity-item:hover,#appScreen .record-card:hover{transform:translateY(-2px);border-color:#c4ccd8;box-shadow:var(--ds-shadow-raised)}
+#appScreen .status-success,#appScreen .good{color:var(--ds-green)}
+#appScreen .status-warning,#appScreen .attention{color:var(--ds-gold)}
+#appScreen .status-danger,#appScreen .danger{color:var(--ds-danger)}
+@media(max-width:1100px){#appScreen .topbar-search{width:42px;padding:9px}#appScreen .topbar-search span,#appScreen .topbar-search kbd{display:none}#appScreen .topbar-orbit span{display:none}}
+@media(max-width:900px){#appScreen.app{grid-template-columns:1fr}#appScreen .sidebar{width:min(284px,86vw)}#appScreen .topbar{padding-inline:16px}#appScreen .dashboard,#appScreen .pipeline-view,#appScreen .clients-view,#appScreen .activities-view,#appScreen .module-view{padding:22px 16px 38px}}
+@media(max-width:620px){#appScreen .topbar-context small{display:none}#appScreen .topbar-context h2{align-self:center}#appScreen .topbar-tools{gap:6px}#appScreen .topbar-orbit{display:none}#appScreen .topbar .primary{padding-inline:12px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){#appScreen *,#appScreen *:before,#appScreen *:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}

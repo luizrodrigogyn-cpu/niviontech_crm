@@ -286,9 +286,10 @@ function showView(view){
   $('#teamView').classList.toggle('hidden',!team);
   $('#templatesView').classList.toggle('hidden',!templates);
   $('#reportsView').classList.toggle('hidden',!reports);
-  const titles={today:['Hoje','Seu resumo comercial'],pipeline:['Funil','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  const titles={today:['Dashboard','Visão geral do seu comercial'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
   $('#newButton').style.display=['organize','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('.sidebar').classList.remove('open');
   if(pipeline)renderPipeline();
@@ -521,7 +522,7 @@ document.querySelectorAll('[data-close-user-modal]').forEach(button=>button.oncl
 document.querySelectorAll('[data-close-drawer]').forEach(button=>button.onclick=closeDealDrawer);
 document.querySelectorAll('[data-close-client-drawer]').forEach(button=>button.onclick=closeClientDrawer);
 $('#undoMove').onclick=undoLastMove;$('#dismissUndo').onclick=hideUndo;
-$('#newButton').onclick=()=>{if(appState.currentView==='clients')openClientModal();else if(appState.currentView==='activities'||appState.currentView==='today')openActivityModal();else if(appState.currentView==='proposals')openProposalModal();else if(appState.currentView==='team')openUserModal();else{if(appState.currentView!=='pipeline')showView('pipeline');openDealModal()}};
+$('#newButton').onclick=()=>{if(appState.currentView==='clients')openClientModal();else if(appState.currentView==='activities')openActivityModal();else if(appState.currentView==='proposals')openProposalModal();else if(appState.currentView==='team')openUserModal();else{if(appState.currentView!=='pipeline'&&appState.currentView!=='today')showView('pipeline');openDealModal()}};
 $('#todayAddActivity').onclick=openActivityModal;
 $('#dealSearch').oninput=event=>renderPipeline(event.target.value);
 $('#clientSearch').oninput=renderClients;
@@ -1414,3 +1415,12 @@ function installIdentityAvatarColors(){
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installIdentityAvatarColors);else installIdentityAvatarColors();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installCloudSyncPanel);else installCloudSyncPanel();
+
+function installLovableTopbar(){
+  const search=$('#topbarSearch'),orbit=$('#topbarOrbit'),count=$('#topbarOrbitCount');
+  if(search&&!search.dataset.ready){search.dataset.ready='1';search.addEventListener('click',()=>openGlobalSearch())}
+  const syncCount=()=>{const source=$('#orbitAttentionCount');if(count){const value=Number(source?.textContent||0);count.textContent=String(value);count.hidden=value===0}};
+  if(orbit&&!orbit.dataset.ready){orbit.dataset.ready='1';orbit.addEventListener('click',()=>{syncCount();openOrbitAttention()})}
+  syncCount();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLovableTopbar);else installLovableTopbar();
