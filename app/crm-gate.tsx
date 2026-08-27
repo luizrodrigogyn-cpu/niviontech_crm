@@ -109,18 +109,27 @@ export default function CrmGate() {
     body = <main className="crm-shell"><iframe title="NivionTech CRM" src={iframeUrl} /></main>;
   } else {
     body = (
-    <main className="secure-auth">
-      <section className="secure-brand">
-        <div className="secure-grid" />
-        <div className="secure-logo"><img src="/crm/assets/niviontech-symbol.png" alt="" /><strong>NivionTech</strong><span>CRM</span></div>
-        <div className="secure-copy"><small>SEU COMERCIAL EM MOVIMENTO</small><h1>Comece o dia<br />sabendo<br />exatamente o que<br />fazer.</h1><p>Organize clientes, acompanhe oportunidades e avance cada venda com clareza.</p></div>
-        <article className="secure-float float-one"><i>O</i><span><small>ORBIT RECOMENDA</small><strong>Comece pela proposta</strong><em>Maior chance de avançar hoje</em></span></article>
-        <article className="secure-float float-two"><i>◇</i><span><small>FUNIL EM MOVIMENTO</small><strong>R$ 27.400</strong><em>4 oportunidades abertas</em></span></article>
-        <article className="secure-float float-three"><i>↗</i><span><small>PRÓXIMA ATIVIDADE</small><strong>Apresentar proposta</strong><em>Hoje · 10:00</em></span></article>
-        <div className="secure-signature"><i>O</i><span><strong>Orbit</strong><small>Seu assistente comercial.</small></span></div>
+    <main className="marketing-site">
+      <nav className="marketing-nav" aria-label="Navegação principal">
+        <a className="marketing-logo" href="#inicio"><img src="/crm/assets/niviontech-symbol.png" alt="" /><strong>NivionTech</strong></a>
+        <div><a href="#produto">Produto</a><a href="#funcionalidades">Funcionalidades</a><a href="#seguranca">Segurança</a><a href="#publico">Para quem é</a><a href="#contato">Contato</a></div>
+        <a className="marketing-login" href="#acesso">Entrar no CRM</a>
+      </nav>
+
+      <section className="marketing-hero" id="inicio">
+        <div className="marketing-hero-copy"><span className="marketing-pill">◈ GESTÃO COMERCIAL BRASILEIRA</span><h1>Seu processo<br />comercial,<br />finalmente sob<br /><em>controle.</em></h1><p>O NivionTech CRM reúne clientes, oportunidades, tarefas e inteligência comercial em uma experiência simples, visual e segura.</p><div className="marketing-actions"><a href="#acesso">Experimentar o NivionTech CRM →</a><a className="secondary" href="#produto">◉ Ver como funciona</a></div><div className="marketing-facts"><span><b>1 ambiente</b>Clientes, negócios e tarefas</span><span><b>Orbit</b>Inteligência que sugere ações</span><span><b>Multiempresa</b>Dados separados e protegidos</span></div></div>
+        <div className="marketing-demo" aria-label="Demonstração do pipeline"><div className="demo-head"><span>PAINEL COMERCIAL<strong>Pipeline · Agosto</strong></span><b>↗ +18,4%</b></div><div className="demo-metrics"><span>EM ABERTO<b>R$ 443k</b></span><span>GANHOS NO MÊS<b>R$ 128k</b></span><span>CONVERSÃO<b>34%</b></span></div><div className="demo-board"><span>Qualificação<i>Atlas Log · R$ 32.000</i></span><span>Proposta<i>Nortek · R$ 76.500</i></span><span>Negociação<i>Grupo Meridian · R$ 128.000</i></span></div><aside><b>✦ Orbit</b><p>3 oportunidades sem próximo passo definido.</p><strong>Revisar agora ↗</strong></aside></div>
       </section>
-      <section className="secure-access">
-        <form className="secure-card" onSubmit={step === 'email' ? sendCode : verifyCode}>
+
+      <section className="marketing-section" id="produto"><small>POR QUE NIVIONTECH</small><h2>Um ambiente único para<br />conduzir o comercial com clareza.</h2><div className="marketing-card-grid four"><article><i>▣</i><h3>Pipeline visual</h3><p>Acompanhe oportunidades e mova negócios entre as etapas com um gesto.</p></article><article><i>◎</i><h3>Clientes organizados</h3><p>Histórico, contatos e próximos passos reunidos em um só lugar.</p></article><article><i>✦</i><h3>Inteligência comercial</h3><p>Identifique atrasos, riscos e prioridades antes que virem problema.</p></article><article><i>▱</i><h3>Operação segura</h3><p>Dados protegidos e separados por empresa, do primeiro acesso ao relatório.</p></article></div></section>
+
+      <section className="marketing-section" id="funcionalidades"><small>FUNCIONALIDADES</small><h2>Tudo que o comercial precisa,<br />sem excesso.</h2><div className="feature-table">{['Funil de vendas','Cadastro de clientes','Gestão de oportunidades','Tarefas e agenda','Dashboard comercial','Relatórios e estatísticas','Gestão de usuários','Controle de acessos','Módulos ativáveis','Notificações inteligentes','Saúde da carteira'].map((item,index)=><article key={item}><i>{['▽','♙','◇','▣','⊞','⌁','♧','⌘','◉','♢','◷'][index]}</i><div><h3>{item}</h3><p>{['Etapas configuráveis para o seu processo real.','Ficha completa, contatos e histórico.','Valores, prazos e responsáveis sempre visíveis.','Compromissos e follow-ups no ritmo do time.','Indicadores do mês em uma única tela.','Resultados por período, etapa e vendedor.','Cadastre a equipe e organize por função.','Cada pessoa vê apenas o que precisa.','Ligue recursos conforme a empresa cresce.','Avisos no momento em que fazem diferença.','Concentração de receita e clientes em risco.'][index]}</p></div></article>)}</div></section>
+
+      <section className="marketing-section" id="seguranca"><small>SEGURANÇA</small><h2>Segurança não é um detalhe.<br /><em>É parte do produto.</em></h2><div className="marketing-card-grid three">{[['◉','Autenticação segura','Só entra quem realmente tem acesso à conta.'],['▦','Dados separados por empresa','As informações de cada cliente ficam isoladas.'],['◇','Usuários e permissões','Você define quem pode ver, editar e excluir.'],['▱','Proteção de informações sensíveis','Dados comerciais guardados com cuidado.'],['◉','Conexão HTTPS','Todo o tráfego é criptografado de ponta a ponta.'],['▤','Monitoramento e auditoria','Registro das ações importantes do sistema.']].map(item=><article key={item[1]}><i>{item[0]}</i><h3>{item[1]}</h3><p>{item[2]}</p></article>)}</div></section>
+
+      <section className="marketing-section" id="publico"><small>PARA QUEM É</small><h2>Feito para quem vende com processo.</h2><div className="audience-grid">{['Pequenas empresas','Equipes comerciais','Prestadores de serviços','Consultorias','Negócios B2B','Empresas em estruturação'].map((item,index)=><article key={item}><i>{['▣','▥','⌕','◉','♙','▤'][index]}</i><div><h3>{item}</h3><p>{['Organize as vendas sem contratar um time de sistemas.','Metas, funil e responsabilidades claras para todos.','Propostas, contatos e recorrência sob controle.','Ciclos longos acompanhados etapa por etapa.','Múltiplos contatos e decisores em cada oportunidade.','Crie um processo de vendas de verdade.'][index]}</p></div></article>)}</div></section>
+
+      <section className="marketing-access" id="acesso"><div><small>COMECE AGORA</small><h2>Venda com mais clareza.<br />Cresça com mais controle.</h2><p>Entre com seu e-mail corporativo. O acesso continua protegido pelo Clerk e por código temporário.</p></div><form className="secure-card" onSubmit={step === 'email' ? sendCode : verifyCode}>
           <div className="secure-label">ACESSO SEGURO</div>
           <h2>{step === 'email' ? 'Acesse sua empresa' : 'Confira seu e-mail'}</h2>
           <p>{step === 'email' ? 'Receba um código para continuar seu dia comercial.' : `Enviamos um código de 6 dígitos para ${email}.`}</p>
@@ -129,8 +138,8 @@ export default function CrmGate() {
           {message && <div className="secure-message" role="alert">{message}</div>}
           {step === 'code' && <button className="secure-link" type="button" onClick={() => { signIn.reset(); setStep('email'); setCode(''); setMessage(''); }}>Usar outro e-mail</button>}
           <div className="secure-note"><span>✓</span><small>Sem senha local. Seu acesso é validado com código temporário.</small></div>
-        </form>
-      </section>
+      </form></section>
+      <footer className="marketing-footer" id="contato"><div className="marketing-logo"><img src="/crm/assets/niviontech-symbol.png" alt="" /><strong>NivionTech</strong></div><p>NivionTech CRM: gestão comercial simples, visual e segura para empresas que querem crescer com processo.</p><span>© 2026 NivionTech · contato@niviontech.com.br</span></footer>
     </main>
     );
   }

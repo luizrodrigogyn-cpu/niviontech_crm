@@ -291,3 +291,54 @@ body{background:var(--ds-bg);color:#182437;font-family:Inter,Manrope,sans-serif;
 @media(max-width:900px){#appScreen.app{grid-template-columns:1fr}#appScreen .sidebar{width:min(284px,86vw)}#appScreen .topbar{padding-inline:16px}#appScreen .dashboard,#appScreen .pipeline-view,#appScreen .clients-view,#appScreen .activities-view,#appScreen .module-view{padding:22px 16px 38px}}
 @media(max-width:620px){#appScreen .topbar-context small{display:none}#appScreen .topbar-context h2{align-self:center}#appScreen .topbar-tools{gap:6px}#appScreen .topbar-orbit{display:none}#appScreen .topbar .primary{padding-inline:12px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){#appScreen *,#appScreen *:before,#appScreen *:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+
+/* Fidelidade às telas internas do Lovable, sobre os módulos funcionais existentes. */
+#appScreen.app{grid-template-columns:220px minmax(0,1fr)!important}
+#appScreen .sidebar{width:220px!important;padding:14px 10px!important;background:#071a31!important}
+#appScreen .sidebar>.tenant-brand{border:0!important;background:transparent!important;box-shadow:none!important}
+#appScreen .workspace{background:#f7f7f5!important;background-image:none!important}
+#appScreen .topbar{display:flex!important;flex-direction:row-reverse!important;justify-content:flex-start!important;gap:10px!important;min-height:64px!important;padding:10px 16px!important;background:rgba(255,255,255,.9)!important;box-shadow:0 6px 18px rgba(7,26,49,.11)!important}
+#appScreen .topbar-context{display:none!important}
+#appScreen .topbar-tools{width:100%!important;justify-content:flex-end!important}
+#appScreen .topbar-search{width:auto!important;min-width:0!important;flex:1!important;max-width:none!important;border-radius:99px!important;background:#fff!important;box-shadow:inset 0 0 0 1px #e2e7ec,0 4px 12px rgba(7,26,49,.05)!important}
+#appScreen .topbar-orbit{border:0!important;border-radius:13px!important;background:#071a31!important;color:#fff!important}
+#appScreen .topbar-orbit b{background:#bf8914!important;color:#071a31!important}
+#appScreen .topbar .primary{display:none!important}
+#appScreen .dashboard,#appScreen .pipeline-view,#appScreen .clients-view,#appScreen .activities-view,#appScreen .module-view{max-width:1220px!important;padding:28px 22px 54px!important}
+#appScreen .welcome{align-items:end!important;margin-bottom:18px!important}
+#appScreen .welcome h1{font-size:32px!important;line-height:1.02!important}
+#appScreen .welcome>div:first-child>p:last-child{max-width:720px!important;color:#7a8491!important;font-size:12px!important}
+#appScreen .date-card{min-width:230px!important;padding:13px 16px!important;border-radius:14px!important;background:#fff!important}
+#appScreen .date-card strong{font-size:18px!important}
+#appScreen #roleFocus{display:none!important}
+#appScreen .metrics{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin-bottom:18px!important}
+#appScreen .metrics article{min-height:134px!important;padding:18px!important;border-radius:16px!important;background:#fff!important}
+#appScreen .metrics article.metric-emphasis{border-color:#173654!important;background:linear-gradient(155deg,#0c2947,#07101c)!important;box-shadow:0 18px 30px -16px rgba(7,26,49,.6)!important}
+#appScreen .metrics article.metric-emphasis small,#appScreen .metrics article.metric-emphasis strong{color:#fff!important}
+#appScreen .metrics article.metric-emphasis span{color:#82c9ae!important}
+#appScreen .metrics article strong{margin:10px 0!important;font-size:22px!important}
+#appScreen .dashboard-grid{grid-template-columns:1.2fr 1fr!important;gap:14px!important}
+#appScreen .panel{border-radius:18px!important;background:#fff!important;box-shadow:0 8px 20px rgba(7,26,49,.055)!important}
+#appScreen .orbit-panel{background:#fff!important;color:#071a31!important;border-color:#d9e1e8!important}
+#appScreen .orbit-panel h3,#appScreen .orbit-panel strong{color:#071a31!important}
+#appScreen .orbit-panel p{color:#75808e!important}
+#appScreen .orbit-panel .recommendation{border-color:#e0e6eb!important;background:#fbfcfd!important}
+#appScreen .orbit-panel .recommendation>span{background:#071a31!important;color:#fff!important}
+#appScreen .orbit-button{background:#071a31!important;color:#fff!important}
+#appScreen .pipeline-heading h1{font-size:31px!important}
+#appScreen .pipeline-summary{display:none!important}
+#appScreen .pipeline-toolbar{padding:10px!important;border:1px solid #dbe2e8!important;border-radius:16px!important;background:#fff!important;box-shadow:0 8px 18px rgba(7,26,49,.05)!important}
+#appScreen .pipeline-toolbar label{border-radius:12px!important;background:#fbfcfd!important}
+#appScreen .pipeline-value-summary{display:none!important}
+#appScreen .kanban{display:grid!important;grid-template-columns:repeat(4,minmax(220px,1fr))!important;gap:12px!important;margin-top:18px!important;overflow-x:auto!important}
+#appScreen .kanban-column{min-width:220px!important;padding:10px!important;border:1px solid #dbe2e8!important;border-radius:17px!important;background:#f1f2f2!important;box-shadow:none!important}
+#appScreen .column-header{padding:2px 3px 11px!important}
+#appScreen .column-header h3{font-size:12px!important}
+#appScreen .deal-card{padding:14px!important;border:1px solid #dbe2e8!important;border-radius:14px!important;background:#fff!important;box-shadow:0 4px 10px rgba(7,26,49,.05)!important;backdrop-filter:none!important}
+#appScreen .deal-card:before{display:none!important}
+#appScreen .deal-value{font-size:17px!important}
+#appScreen .deal-health{border-radius:99px!important}
+#appScreen .orbit-attention-panel,#appScreen #orbitAttentionPanel{background:linear-gradient(170deg,#0b2948,#06111f 50%,#050a10)!important;color:#fff!important}
+#appScreen .orbit-attention-panel article,#appScreen #orbitAttentionPanel article{border-color:#294663!important;background:rgba(12,34,59,.76)!important;color:#fff!important}
+@media(max-width:900px){#appScreen.app{grid-template-columns:1fr!important}#appScreen .sidebar{width:min(280px,88vw)!important}#appScreen .metrics{grid-template-columns:repeat(2,1fr)!important}#appScreen .dashboard-grid{grid-template-columns:1fr!important}}
+@media(max-width:580px){#appScreen .metrics{grid-template-columns:1fr!important}#appScreen .welcome{align-items:start!important;flex-direction:column!important}.topbar-tools #topbarSearch{display:flex!important}.topbar-tools #topbarOrbit{display:flex!important}}

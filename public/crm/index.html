@@ -79,13 +79,13 @@
     <section class="workspace">
       <header class="topbar"><div class="topbar-context"><button id="menuButton" aria-label="Abrir menu">☰</button><h2 id="pageTitle">Dashboard</h2><small id="pageSubtitle">Visão geral do seu comercial</small></div><div class="topbar-tools"><button type="button" id="topbarSearch" class="topbar-search" aria-label="Buscar no CRM"><i>⌕</i><span>Buscar clientes, oportunidades, tarefas</span><kbd>Ctrl K</kbd></button><button type="button" id="topbarOrbit" class="topbar-orbit" aria-label="Abrir Orbit"><i>O</i><span>Orbit</span><b id="topbarOrbitCount">0</b></button><button class="primary" id="newButton">+ Nova oportunidade</button></div></header>
       <div class="dashboard" id="todayView">
-        <div class="welcome"><div><p class="overline">BOM TRABALHO</p><h1 id="welcomeTitle">Olá.</h1><p>Estas são as prioridades para sua empresa vender melhor hoje.</p></div><div class="date-card" style="display:flex;flex-direction:column;align-items:flex-start"><small id="todayWeekday" style="display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase"></small><strong id="todayDate" style="display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance"></strong><div id="dateCardUser" style="width:100%;margin-top:15px;padding-top:12px;border-top:1px solid rgba(69,92,138,.12);color:var(--ink);font-size:11px;font-weight:800"></div></div></div>
+        <div class="welcome"><div><p class="overline">VISÃO GERAL</p><h1 id="welcomeTitle">Painel comercial</h1><p>O essencial: o que está em aberto, o que exige ação e onde sua equipe deve avançar.</p></div><div class="date-card" style="display:flex;flex-direction:column;align-items:flex-start"><small id="todayWeekday" style="display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase"></small><strong id="todayDate" style="display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance"></strong><div id="dateCardUser" style="width:100%;margin-top:15px;padding-top:12px;border-top:1px solid rgba(69,92,138,.12);color:var(--ink);font-size:11px;font-weight:800"></div></div></div>
         <section id="roleFocus" class="role-focus"></section>
         <section class="metrics">
-          <article><small>Atividades pendentes</small><strong id="todayPendingCount">3</strong><span id="todayActivityHint">3 para hoje</span></article>
-          <article><small>Oportunidades abertas</small><strong id="todayOpenDeals">4</strong><span id="todayPipelineValue">R$ 27.400 no funil</span></article>
+          <article class="metric-emphasis"><small>Precisa de ação</small><strong id="todayPendingCount">3</strong><span id="todayActivityHint">3 prioridades</span></article>
+          <article><small>Pipeline aberto</small><strong id="todayPipelineValue">R$ 27.400</strong><span><b id="todayOpenDeals">4</b> oportunidades</span></article>
           <article><small>Em fechamento</small><strong id="todayClosingValue">R$ 7.900</strong><span>Prioridade comercial</span></article>
-          <article><small>Clientes cadastrados</small><strong id="todayClientsCount">3</strong><span>Base ativa</span></article>
+          <article><small>Base comercial</small><strong id="todayClientsCount">3</strong><span>Clientes cadastrados</span></article>
         </section>
         <div class="dashboard-grid">
           <section class="panel"><header><div><h3>O que preciso fazer hoje?</h3><p>Ordenado por prioridade</p></div><button id="todayAddActivity">+ Atividade</button></header><div id="todayTasks"></div></section>
@@ -94,7 +94,7 @@
       </div>
       <div class="pipeline-view hidden" id="pipelineView">
         <div class="pipeline-heading">
-          <div><p class="overline">VISÃO COMERCIAL</p><h1>Funil de vendas</h1><p>Acompanhe e arraste cada oportunidade até o fechamento.</p></div>
+          <div><p class="overline">COMERCIAL</p><h1>Pipeline de vendas</h1><p>Arraste no desktop ou use os controles de etapa no celular. Valores, saúde e próximo passo continuam visíveis.</p></div>
           <div class="pipeline-summary"><small>VALOR TOTAL DO FUNIL</small><strong id="pipelineTotal">R$ 0</strong></div>
         </div>
         <div class="pipeline-toolbar"><label>⌕<input id="dealSearch" placeholder="Buscar oportunidade ou cliente"></label><span><b id="dealCount">0</b> oportunidades abertas</span></div>
