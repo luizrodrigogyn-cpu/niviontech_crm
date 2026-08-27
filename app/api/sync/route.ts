@@ -1,4 +1,5 @@
-import { authenticatedUserId, ensureSchema, getOrgRow, publicSnapshot, resolveMembership, response, safePayload } from '../../../db/org';
+import { auth } from '@clerk/nextjs/server';
+import { ensureSchema, getOrgRow, publicSnapshot, resolveMembership, response, safePayload, saveAutomaticSnapshot } from '../../../db/org';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +9,9 @@ type SnapshotRow = { payload: string; revision: number; updated_at: string; devi
 // Todo membro autenticado da mesma organização lê e escreve o mesmo snapshot — é isso que faz
 // a tela "Equipe e acessos" ter efeito real entre dispositivos diferentes.
 
-export async function GET(request: Request) {
-  const userId = authenticatedUserId(request);
-  if (!userId) return response({ error: 'authentication_required' }, 401);
+export async function GET() {
+  const { isAuthenticated, userId } = await auth();
+  if (!isAuthenticated || !userId) return response({ error: 'authentication_required' }, 401);
   const { orgId, role } = await resolveMembership(userId);
   const org = await getOrgRow(orgId);
   // revision 0 = organização provisionada mas nunca sincronizada de verdade; trate como "sem nuvem ainda"
@@ -25,8 +26,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const userId = authenticatedUserId(request);
-  if (!userId) return response({ error: 'authentication_required' }, 401);
+  const { isAuthenticated, userId } = await auth();
+  if (!isAuthenticated || !userId) return response({ error: 'authentication_required' }, 401);
   const { orgId, role } = await resolveMembership(userId);
 
   let body: Record<string, unknown>;
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
   if (existing && !force && existing.revision !== baseRevision) {
     return response({ error: 'revision_conflict', orgId, role, snapshot: publicSnapshot(existing) }, 409);
   }
+
+  if (existing?.revision) await saveAutomaticSnapshot(orgId, existing);
 
   const updatedAt = new Date().toISOString();
   const nextRevision = (existing?.revision ?? 0) + 1;

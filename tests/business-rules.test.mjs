@@ -5,6 +5,7 @@ import {applyReceiptRules} from '../modules/receipts.js';
 import {validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
+import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 
 const tests=[];
 function test(name,run){tests.push({name,run})}
@@ -118,6 +119,25 @@ test('sincronização envia somente dados do NivionTech e preserva preferências
   assert.equal(storage.getItem('niviontech_owner'),null);
   assert.equal(storage.getItem('niviontech_device_id'),'device-1');
   assert.equal(storage.getItem('theme'),'dark');
+});
+
+test('migração Clerk preserva proprietário e remove credenciais locais',()=>{
+  const storage=memoryStorage({niviontech_owner:JSON.stringify({id:'owner',name:'Rodrigo',email:'antigo@example.com',passwordHash:'segredo',salt:'sal'}),niviontech_company:'{"name":"NivionTech"}',niviontech_users:JSON.stringify([{id:'owner',password:'123456',passwordHash:'hash'}])});
+  const session=memoryStorage();
+  const owner=migrateClerkIdentity(storage,session,{userId:'user_clerk',orgId:'org_1',name:'Rodrigo Melo',email:'rodrigo@example.com',profile:'Proprietário/Admin'});
+  assert.equal(owner.clerkUserId,'user_clerk');
+  assert.equal(owner.passwordHash,undefined);
+  assert.equal(owner.salt,undefined);
+  assert.equal(JSON.parse(storage.getItem('niviontech_users'))[0].password,undefined);
+  assert.equal(session.getItem('niviontech_session'),'owner');
+});
+
+test('snapshot nunca envia senha ou hash legado',()=>{
+  const storage=memoryStorage({niviontech_owner:JSON.stringify({email:'r@example.com',passwordHash:'hash',salt:'salt'}),niviontech_users:JSON.stringify([{email:'r@example.com',password:'123456'}])});
+  const snapshot=collectSyncStorage(storage);
+  assert.equal(JSON.parse(snapshot.niviontech_owner).passwordHash,undefined);
+  assert.equal(JSON.parse(snapshot.niviontech_users)[0].password,undefined);
+  assert.deepEqual(withoutLocalCredentials({name:'R',passwordHash:'x',salt:'y'}),{name:'R'});
 });
 
 test('sincronização baixa a nuvem apenas quando a cópia local está limpa',()=>{

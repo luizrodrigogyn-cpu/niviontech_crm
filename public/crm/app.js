@@ -1,4 +1,4 @@
-import {authDomain} from './modules/auth.js';
+import {authDomain,migrateClerkIdentity,withoutLocalCredentials} from './modules/auth.js';
 import {onboardingDomain} from './modules/onboarding.js';
 import {pipelineDomain,validateNegotiation,applyWonDealRules,applyLostDealRules,commercialPipelineStages,findStaleDeals,getStaleDealDays,saveStaleDealDays,calculateDealHealth} from './modules/pipeline.js';
 import {clientsDomain,mergeClientData,validateClientRegistration} from './modules/clients.js';
@@ -21,6 +21,8 @@ const CLIENTS_KEY='niviontech_clients';
 const ACTIVITIES_KEY='niviontech_activities';
 const PROPOSALS_KEY='niviontech_proposals';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
+const authParams=new URLSearchParams(location.search);
+const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
 
 function createStore(key,initialData,{normalize,afterSave}={}){
   return{
@@ -61,22 +63,24 @@ const initialClients=[{id:'client-1',name:'Almeida Engenharia',segment:'Constru�
 const initialProposals=[{id:'proposal-1',title:'Proposta de implantação',client:'Almeida Engenharia',dealId:'deal-1',value:12500,validUntil:new Date(Date.now()+7*86400000).toISOString().slice(0,10),status:'sent',notes:'Condições comerciais apresentadas',createdAt:new Date().toISOString()}];
 const initialActivities=[{id:'activity-1',title:'Apresentar proposta',type:'Reunião',client:'Almeida Engenharia',date:new Date().toISOString().slice(0,10),time:'10:00',note:'Apresentar condições comerciais',done:false},{id:'activity-2',title:'Retornar contato',type:'Ligação',client:'Café do Cerrado',date:new Date().toISOString().slice(0,10),time:'14:30',note:'Confirmar necessidades',done:false},{id:'activity-3',title:'Revisar contrato',type:'Tarefa',client:'Studio Aurora',date:new Date().toISOString().slice(0,10),time:'16:00',note:'Validar cláusulas finais',done:false}];
 
-const AUTH_TIMEOUT_MS=12000;
-function withTimeout(operation,timeout=AUTH_TIMEOUT_MS,message='A validação demorou mais que o esperado. Verifique sua conexão e tente novamente.'){
-  let timer;
-  return Promise.race([operation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),timeout)})]).finally(()=>clearTimeout(timer));
-}
-async function derivePassword(password,salt){
-  return withTimeout((async()=>{
-    if(!crypto?.subtle)throw new Error('Este navegador não oferece a proteção necessária para validar a senha.');
-    const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-    const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:120000,hash:'SHA-256'},material,256);
-    return Array.from(new Uint8Array(bits),byte=>byte.toString(16).padStart(2,'0')).join('');
-  })());
-}
-
 function getOwner(){try{return JSON.parse(localStorage.getItem(STORAGE.owner))}catch{return null}}
 function getCompany(){try{const company=JSON.parse(localStorage.getItem(STORAGE.company));if(company&&!company.plan){company.plan='essential';localStorage.setItem(STORAGE.company,JSON.stringify(company))}return company}catch{return null}}
+function saveCompany(company){localStorage.setItem(STORAGE.company,JSON.stringify(company));return company}
+function renderCompanyBrand(){
+  const company=getCompany()||{},name=(company.fantasyName||company.name||'Sua empresa').trim(),logo=$('#sidebarCompanyLogo'),label=$('#sidebarCompanyName');
+  if(label){label.textContent=name;label.title=name}
+  if(logo){logo.src=company.logoData||'assets/niviontech-symbol.png';logo.alt=company.logoData?`Logo ${name}`:'NivionTech CRM'}
+}
+function resizeCompanyLogo(file){
+  return new Promise((resolve,reject)=>{
+    if(!file?.type?.startsWith('image/')){reject(new Error('Escolha uma imagem PNG, JPG ou WebP.'));return}
+    if(file.size>3*1024*1024){reject(new Error('A imagem deve ter no máximo 3 MB.'));return}
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Não foi possível ler esta imagem.'));
+    reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error('A imagem selecionada não é válida.'));image.onload=()=>{const limit=320,scale=Math.min(1,limit/Math.max(image.width,image.height)),width=Math.max(1,Math.round(image.width*scale)),height=Math.max(1,Math.round(image.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;canvas.getContext('2d').drawImage(image,0,0,width,height);resolve(canvas.toDataURL('image/png',.9))};image.src=reader.result};
+    reader.readAsDataURL(file);
+  });
+}
 function companyPlanLabel(plan){return{essential:'Essencial',team:'Equipe',performance:'Performance'}[plan]||'Essencial'}
 function getUsers(){try{const stored=JSON.parse(localStorage.getItem(USERS_KEY));if(Array.isArray(stored)&&stored.length)return stored;const owner=getOwner();return owner?[{...owner,id:owner.id||'owner',profile:'Proprietário/Admin',visibility:'all',status:'active'}]:[]}catch{return []}}
 function saveUsers(users){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
@@ -108,7 +112,6 @@ function weeklyActivityStreak(user){
 }
 function sellerRecognition(user,progress){const badges=[];[50,75,100].forEach(mark=>{if(progress.percent>=mark)badges.push(`<span class="recognition-badge milestone-${mark}">✓ ${mark===100?'Meta atingida':'Marco de '+mark+'%'}</span>`)});const streak=weeklyActivityStreak(user);if(streak>=2)badges.push(`<span class="recognition-badge streak">↗ ${streak} semanas em dia</span>`);const next=[50,75,100].find(mark=>progress.percent<mark);return badges.length?badges.join(''):next?`<small>Próximo reconhecimento em ${next}%</small>`:'<small>Meta superada</small>'}
 function activeSessionUser(){const id=sessionStorage.getItem(SESSION);const users=getUsers();return id==='active'?users.find(user=>user.profile==='Proprietário/Admin')||users[0]:users.find(user=>user.id===id)}
-function createSalt(){return crypto.getRandomValues(new Uint32Array(4)).join('-')}
 function setScreen(name){['authScreen','onboardingScreen','appScreen'].forEach(id=>$('#'+id).classList.toggle('hidden',id!==name))}
 
 const cloudSyncState={enabled:false,busy:false,conflict:null,timer:null,status:'Conectando à proteção privada...',tone:'neutral'};
@@ -117,15 +120,12 @@ function readSyncMeta(){try{return JSON.parse(localStorage.getItem(SYNC_META_KEY
 function saveSyncMeta(snapshot){const meta={revision:Number(snapshot?.revision||0),fingerprint:snapshotFingerprint(collectSyncStorage(localStorage)),updatedAt:snapshot?.updatedAt||new Date().toISOString()};localStorage.setItem(SYNC_META_KEY,JSON.stringify(meta));return meta}
 function setCloudSyncStatus(status,tone='neutral'){cloudSyncState.status=status;cloudSyncState.tone=tone;const element=$('#cloudSyncStatus');if(element){element.textContent=status;element.dataset.tone=tone}}
 async function cloudSyncRequest(method='GET',body){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
-  try{
-    const response=await fetch('/api/sync',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,signal:controller.signal});
-    const data=await response.json().catch(()=>({}));
-    if(response.status===401)return{localOnly:true};
-    if(response.status===409)return{conflict:true,...data};
-    if(!response.ok)throw new Error(data.error||'sync_unavailable');
-    return data;
-  }finally{clearTimeout(timer)}
+  const response=await fetch('/api/sync',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
+  const data=await response.json().catch(()=>({}));
+  if(response.status===401)return{localOnly:true};
+  if(response.status===409)return{conflict:true,...data};
+  if(!response.ok)throw new Error(data.error||'sync_unavailable');
+  return data;
 }
 async function uploadCloudSnapshot({force=false}={}){
   if(cloudSyncState.busy)return null;
@@ -177,63 +177,20 @@ function installCloudSyncPanel(){
   $('#syncNow').onclick=()=>uploadCloudSnapshot();$('#useDeviceSnapshot').onclick=useDeviceSnapshot;$('#useCloudSnapshot').onclick=useCloudSnapshot;updateCloudSyncPanel();
 }
 
-let accessMode='register';
-function setAccessMode(mode,owner=getOwner()){
-  accessMode=owner?'login':mode;
-  const isLogin=accessMode==='login';
-  $('#accessLabel').textContent=isLogin?'ACESSO EXISTENTE':'PRIMEIRO ACESSO';
-  $('#accessTitle').textContent=isLogin?'Entre no NivionTech CRM':'Crie o acesso do proprietário';
-  $('#accessDescription').textContent=isLogin?'Use o e-mail e a senha que você já cadastrou.':'Você terá controle total das configurações e dos dados comerciais.';
-  $('#nameGroup').classList.toggle('hidden',isLogin);
-  $('#accessButton').textContent=isLogin?'Entrar':'Criar meu acesso';
-  $('#accessModeToggle').textContent=isLogin?'Ainda não tenho acesso · Criar conta':'Já tenho acesso · Entrar';
-  $('#accessModeToggle').hidden=Boolean(owner);
-  $('#accessMessage').textContent='';
-}
-
 function initialize(){
+  if(clerkIdentity){
+    const user=migrateClerkIdentity(localStorage,sessionStorage,clerkIdentity);
+    appState.currentUser=user;
+    user.onboardingComplete||getCompany()?openDashboard(user):openOnboarding();
+    return;
+  }
   const owner=getOwner();
-  if(owner){appState.currentUser=owner;sessionStorage.setItem(SESSION,owner.id);owner.onboardingComplete?openDashboard(owner):openOnboarding();return}
+  const sessionUser=activeSessionUser();
+  if(sessionUser&&owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
   setScreen('authScreen');
-  setAccessMode('register',null);
-  $('#accessLabel').textContent='ACESSO CHATGPT';
-  $('#accessTitle').textContent='Configure seu perfil';
-  $('#accessDescription').textContent='Seu acesso já foi confirmado pelo ChatGPT. Complete seus dados para iniciar.';
-  $('#passwordGroup').classList.add('hidden');
-  $('#ownerPassword').required=false;
-  $('#accessModeToggle').hidden=true;
-  $('#accessButton').textContent='Continuar';
 }
 
-$('#accessModeToggle').onclick=()=>setAccessMode(accessMode==='login'?'register':'login');
-
-$('#accessForm').addEventListener('submit',async event=>{
-  event.preventDefault();
-  const button=$('#accessButton');
-  const message=$('#accessMessage');
-  const owner=getOwner();
-  const email=$('#ownerEmail').value.trim().toLowerCase();
-  message.textContent='';
-  button.disabled=true;
-  button.textContent='Preparando...';
-  button.setAttribute('aria-busy','true');
-  try{
-    if(!owner){
-      const name=$('#ownerName').value.trim();
-      if(name.length<2)throw new Error('Informe seu nome para continuar.');
-      if(!email)throw new Error('Informe seu e-mail para continuar.');
-      const record={id:'owner',name,email,authProvider:'chatgpt',role:'Proprietário/Admin',profile:'Proprietário/Admin',visibility:'all',status:'active',onboardingComplete:false,createdAt:new Date().toISOString()};
-      localStorage.setItem(STORAGE.owner,JSON.stringify(record));
-      saveUsers([record]);appState.currentUser=record;
-      sessionStorage.setItem(SESSION,record.id);
-      openOnboarding();
-    }else{
-      appState.currentUser=owner;sessionStorage.setItem(SESSION,owner.id);
-      owner.onboardingComplete?openDashboard(owner):openOnboarding();
-    }
-  }catch(error){message.textContent=error instanceof Error?error.message:'Não foi possível preparar o acesso. Tente novamente.'}
-  finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='Continuar'}
-});
+$('#accessForm').addEventListener('submit',event=>{event.preventDefault();location.href='/'});
 
 const appState={onboardingStep:0,onboardingDraft:{},currentView:'today',currentUser:null,activeClientFilter:'Todos',activeActivityFilter:'pending',activeDealId:null,activeClientId:null,lastMoveAction:null,undoTimer:null,activeProposalFilter:'all',pendingClientMerge:null};
 const steps=[
@@ -284,6 +241,7 @@ $('#backStep').onclick=()=>{if(appState.onboardingStep>0){appState.onboardingSte
 function openDashboard(owner){
   setScreen('appScreen');
   appState.currentUser=owner;$('#profileName').textContent=owner.name;$('#profileRole').textContent=owner.profile||'Proprietário/Admin';
+  renderCompanyBrand();
   $('#profileInitial').textContent=owner.name.charAt(0).toUpperCase();
   $('#welcomeTitle').textContent=`Olá, ${owner.name.split(' ')[0]}.`;
   const now=new Date(),weekday=new Intl.DateTimeFormat('pt-BR',{weekday:'long'}).format(now),fullDate=new Intl.DateTimeFormat('pt-BR',{day:'numeric',month:'long',year:'numeric'}).format(now);
@@ -507,7 +465,15 @@ function closeProposalModal(){$('#proposalModal').classList.add('hidden');$('#pr
 function renderReceipts(){const won=dealsVisibleToCurrentUser(getDeals()).filter(deal=>deal.status==='won'),sold=won.reduce((sum,deal)=>sum+Number(deal.value),0),received=won.reduce((sum,deal)=>sum+Number(deal.receivedAmount||(deal.paymentStatus==='received'?deal.value:0)),0),open=Math.max(0,sold-received);$('#amountSold').textContent=formatMoney(sold);$('#amountReceived').textContent=formatMoney(received);$('#amountOpen').textContent=formatMoney(open);$('#amountPending').textContent=formatMoney(open);$('#receiptsList').innerHTML=won.length?won.map(deal=>{const status=deal.paymentStatus||'pending',paid=Number(deal.receivedAmount||(status==='received'?deal.value:0));return `<article class="record-card"><div><h3>${escapeHtml(deal.title)}</h3><p>${escapeHtml(deal.client)} · ${deal.dueDate?`Vence ${formatDate(deal.dueDate)}`:'Sem vencimento'}</p></div><div class="record-cell"><small>VENDA / RECEBIDO</small><strong>${formatMoney(deal.value)} / ${formatMoney(paid)}</strong></div><div><span class="record-status ${status}">${{pending:'Pendente',partial:'Parcial',received:'Recebido'}[status]}</span></div><button class="record-action" data-edit-receipt="${deal.id}">Atualizar</button></article>`}).join(''):orbitEmptyState('O caixa começa depois da conquista','Quando você marcar a primeira venda como ganha, o Orbit acompanhará o dinheiro até a entrada.');document.querySelectorAll('[data-edit-receipt]').forEach(button=>button.onclick=()=>openReceiptModal(button.dataset.editReceipt))}
 function openReceiptModal(id,celebration=false){const deal=getDeals().find(item=>item.id===id);if(!deal)return;$('#receiptModal').classList.toggle('receipt-win-mode',celebration);$('#receiptModalEyebrow').textContent=celebration?'VENDA GANHA':'ATUALIZAR PAGAMENTO';$('#receiptModalTitle').textContent=celebration?'Você venceu!':deal.title;$('#receiptModalPrompt').textContent=celebration?`Vamos registrar o recebimento de ${formatMoney(deal.value)} agora? Você pode ajustar os dados provisórios.`:`Atualize o recebimento de ${deal.title}.`;$('#receiptForm [name="dealId"]').value=id;$('#receiptForm [name="total"]').value=deal.value;$('#receiptForm [name="received"]').value=deal.receivedAmount||(deal.paymentStatus==='received'?deal.value:0);$('#receiptForm [name="dueDate"]').value=deal.dueDate||todayISO();$('#receiptForm [name="status"]').value=deal.paymentStatus||'pending';$('#receiptModal').classList.remove('hidden');$('#receiptModal').setAttribute('aria-hidden','false')}
 function closeReceiptModal(){$('#receiptModal').classList.add('hidden');$('#receiptModal').setAttribute('aria-hidden','true');$('#receiptForm').reset()}
-function renderSettings(){const company=getCompany()||{},owner=getOwner()||{};$('#companySettings').innerHTML=`<div><span>Empresa</span><b>${escapeHtml(company.name||'Não informada')}</b></div><div><span>Segmento</span><b>${escapeHtml(company.segment||'Não informado')}</b></div><div><span>Equipe</span><b>${escapeHtml(company.size||'Não informada')}</b></div><div><span>Plano</span><b>${companyPlanLabel(company.plan)}</b></div><div><span>Proprietário</span><b>${escapeHtml(owner.name||'')}</b></div><div><span>Armazenamento</span><b>Local neste navegador</b></div>`;const input=$('#staleDealDays');if(input){input.value=getStaleDealDays();input.onchange=()=>{input.value=saveStaleDealDays(input.value);if(appState.currentView==='today')renderTodayActivities()}}}
+function renderSettings(){
+  const company=getCompany()||{},owner=getOwner()||{},brandName=company.fantasyName||company.name||'';
+  $('#companySettings').innerHTML=`<section class="company-brand-config"><div class="company-brand-preview"><span>${company.logoData?`<img src="${company.logoData}" alt="Logo ${escapeHtml(brandName)}">`:'N'}</span><div><small>IDENTIDADE NO CRM</small><strong>${escapeHtml(brandName||'Sua empresa')}</strong><em>NivionTech CRM</em></div></div><label>Nome fantasia<input id="companyFantasyName" maxlength="48" value="${escapeHtml(brandName)}" placeholder="Ex.: Almeida Engenharia"></label><label class="company-logo-field">Logo da empresa<input id="companyLogoInput" type="file" accept="image/png,image/jpeg,image/webp"><span>PNG, JPG ou WebP · até 3 MB</span></label><div class="company-brand-actions"><button type="button" id="saveCompanyBrand" class="primary">Salvar identidade</button>${company.logoData?'<button type="button" id="removeCompanyLogo" class="secondary">Remover logo</button>':''}</div><p id="companyBrandMessage" role="status"></p></section><div><span>Razão de cadastro</span><b>${escapeHtml(company.name||'Não informada')}</b></div><div><span>Segmento</span><b>${escapeHtml(company.segment||'Não informado')}</b></div><div><span>Equipe</span><b>${escapeHtml(company.size||'Não informada')}</b></div><div><span>Plano</span><b>${companyPlanLabel(company.plan)}</b></div><div><span>Proprietário</span><b>${escapeHtml(owner.name||'')}</b></div><div><span>Armazenamento</span><b>Local e sincronização privada</b></div>`;
+  let pendingLogo=company.logoData||'';const message=$('#companyBrandMessage'),fileInput=$('#companyLogoInput');
+  fileInput.onchange=async()=>{try{pendingLogo=await resizeCompanyLogo(fileInput.files?.[0]);message.textContent='Logo pronta. Clique em salvar identidade.'}catch(error){fileInput.value='';message.textContent=error.message}};
+  $('#saveCompanyBrand').onclick=()=>{const fantasyName=$('#companyFantasyName').value.trim();if(!fantasyName){message.textContent='Informe o nome fantasia da empresa.';return}saveCompany({...company,fantasyName,logoData:pendingLogo,brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
+  const remove=$('#removeCompanyLogo');if(remove)remove.onclick=()=>{saveCompany({...company,fantasyName:$('#companyFantasyName').value.trim()||brandName,logoData:'',brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
+  const input=$('#staleDealDays');if(input){input.value=getStaleDealDays();input.onchange=()=>{input.value=saveStaleDealDays(input.value);if(appState.currentView==='today')renderTodayActivities()}}
+}
 function renderTeam(){const users=getUsers(),active=users.filter(user=>user.status==='active');$('#activeUsersCount').textContent=`${active.length} ${active.length===1?'usuário':'usuários'}`;$('#teamGrid').innerHTML=users.map(user=>`<article class="team-card"><div class="team-card-top"><span class="user-avatar">${ownerInitials(user.name)}</span><div><h3>${escapeHtml(user.name)}</h3><p>${escapeHtml(user.email)}</p></div><i class="user-state ${user.status==='inactive'?'inactive':''}" title="${user.status==='active'?'Ativo':'Inativo'}"></i></div><div class="team-card-info"><div><small>PERFIL</small><strong>${escapeHtml(user.profile)}</strong></div><div><small>VISIBILIDADE</small><strong>${user.visibility==='all'?'Todo o funil':'Carteira própria'}</strong></div></div><div class="team-card-actions">${user.profile==='Proprietário/Admin'?'<button disabled>Acesso principal</button>':`<button data-toggle-user="${user.id}">${user.status==='active'?'Desativar':'Ativar'}</button>`}</div></article>`).join('');document.querySelectorAll('[data-toggle-user]').forEach(button=>button.onclick=()=>toggleUserStatus(button.dataset.toggleUser));renderGoalsEditor(users)}
 function installGoalsEditor(){if($('#salesGoalsEditor'))return;$('#teamGrid').insertAdjacentHTML('afterend','<section id="salesGoalsEditor" class="sales-goals-editor hidden"><header><div><small>GESTÃO DE PERFORMANCE</small><h2>Metas comerciais</h2><p>Defina objetivos mensais individuais e coletivos.</p></div><label>Período<input id="goalsPeriod" type="month"></label></header><div class="goals-table-head"><span>Responsável</span><span>Valor vendido</span><span>Valor recebido</span><span>Atividades concluídas</span><span>Progresso real</span></div><div id="individualGoalRows"></div><div class="team-goal-title"><span>◎</span><div><strong>Meta coletiva da equipe</strong><small>Objetivo compartilhado do período</small></div></div><div id="teamGoalRow"></div><footer><span>Percentual médio dos indicadores com meta definida.</span><button type="button" id="saveSalesGoals">Salvar metas</button></footer></section>');$('#goalsPeriod').onchange=()=>renderGoalsEditor();$('#saveSalesGoals').onclick=saveSalesGoalForm}
 function goalFields(prefix,values={}){return `<label><small>VENDIDO (R$)</small><input type="number" min="0" step="100" data-goal-field="sold" data-goal-owner="${prefix}" value="${Number(values.sold||0)}"></label><label><small>RECEBIDO (R$)</small><input type="number" min="0" step="100" data-goal-field="received" data-goal-owner="${prefix}" value="${Number(values.received||0)}"></label><label><small>ATIVIDADES</small><input type="number" min="0" step="1" data-goal-field="activities" data-goal-owner="${prefix}" value="${Number(values.activities||0)}"></label>`}
@@ -573,7 +539,7 @@ $('#confirmOrganizeReading').onclick=()=>{if(!pendingOrganizeReading)return;cons
 $('#organizeDraft').onsubmit=event=>{event.preventDefault();if(!pendingOrganizeReading)return;const draft=Object.fromEntries(new FormData(event.target)),recognizedPhone=draft.summary.match(/Telefone:\s*([^·]+)/i)?.[1]?.trim()||'',clients=getClients();let client=clients.find(item=>item.name.trim().toLowerCase()===draft.client.trim().toLowerCase());if(!client){client={id:'client-'+Date.now(),name:draft.client,segment:'A confirmar',status:'Prospect',city:'Não informado',phone:recognizedPhone,email:draft.email||'',interactions:[]};clients.push(client)}else{if(!client.phone&&recognizedPhone)client.phone=recognizedPhone;if(!client.email&&draft.email)client.email=draft.email}client.interactions=client.interactions||[];client.interactions.unshift({id:'interaction-'+Date.now(),title:'Conversa organizada',text:draft.summary,date:new Date().toISOString()});addEntityHistory(client,'Cliente atualizado','Conversa organizada adicionada ao histórico');saveClients(clients);const deals=getDeals(),deal={id:'deal-'+Date.now(),title:draft.title,client:client.name,value:Number(draft.value||0),stage:draft.stage,owner:appState.currentUser?.name||getOwner()?.name||'Admin',ownerRole:appState.currentUser?.profile||'Proprietário/Admin',next:draft.next,nextDate:draft.date,urgency:draft.urgency,createdAt:new Date().toISOString(),history:[]};if(deal.stage===stageByMeaning('new'))assignLeadByRoundRobin(deal);addEntityHistory(deal,'Rascunho confirmado','Oportunidade criada pelo fluxo Cole e organize');deals.push(deal);saveDeals(deals);const activities=getActivities();activities.push({id:'activity-'+Date.now(),title:draft.next,type:'Tarefa',client:client.name,date:draft.date,time:draft.time,note:'Criada a partir de conversa confirmada',owner:appState.currentUser?.name,done:false});saveActivities(activities);alert('Rascunho confirmado. Cliente, oportunidade e próxima ação foram organizados.');pendingOrganizeReading=null;event.target.reset();event.target.classList.add('hidden');$('#organizeConfirmation').classList.add('hidden');$('#draftPlaceholder').classList.remove('hidden');$('#conversationText').value='';showView('today')};
 $('#proposalForm').onsubmit=event=>{event.preventDefault();const proposal=Object.fromEntries(new FormData(event.target));proposal.id='proposal-'+Date.now();proposal.value=Number(proposal.value);proposal.createdAt=new Date().toISOString();const proposals=getProposals();proposals.push(proposal);saveProposals(proposals);if(proposal.dealId){const deals=getDeals(),deal=deals.find(item=>item.id===proposal.dealId);if(deal){deal.stage=stageByMeaning('proposal');addEntityHistory(deal,'Proposta criada',proposal.title);saveDeals(deals)}}closeProposalModal();showView('proposals')};
 $('#receiptForm').onsubmit=event=>{event.preventDefault();const form=Object.fromEntries(new FormData(event.target)),deals=getDeals(),deal=deals.find(item=>item.id===form.dealId);if(!deal)return;const wasReceived=deal.paymentStatus==='received';applyReceiptRules(deal,form);addEntityHistory(deal,'Recebimento atualizado',`${formatMoney(deal.receivedAmount)} recebido · Status ${deal.paymentStatus}`);saveDeals(deals);closeReceiptModal();renderReceipts();if(!wasReceived&&deal.paymentStatus==='received')showMicroCelebration('payment',formatMoney(deal.receivedAmount))};
-$('#userForm').onsubmit=async event=>{event.preventDefault();const form=Object.fromEntries(new FormData(event.target)),users=getUsers(),email=form.email.trim().toLowerCase();if(users.some(user=>user.email.toLowerCase()===email)){alert('Já existe um usuário com este e-mail.');return}const salt=createSalt();users.push({id:'user-'+Date.now(),name:form.name.trim(),email,salt,passwordHash:await derivePassword(form.password,salt),profile:form.profile,visibility:form.visibility,status:form.status,createdAt:new Date().toISOString(),createdBy:appState.currentUser?.id});saveUsers(users);closeUserModal();renderTeam();syncRankingAccess()};
+$('#userForm').onsubmit=event=>{event.preventDefault();const form=Object.fromEntries(new FormData(event.target)),users=getUsers(),email=form.email.trim().toLowerCase();if(users.some(user=>user.email.toLowerCase()===email)){alert('Já existe um usuário com este e-mail.');return}users.push(withoutLocalCredentials({id:'user-'+Date.now(),name:form.name.trim(),email,profile:form.profile,visibility:form.visibility,status:form.status,accessStatus:'pending_email_code',createdAt:new Date().toISOString(),createdBy:appState.currentUser?.id}));saveUsers(users);closeUserModal();renderTeam();syncRankingAccess();alert('Colaborador salvo sem senha local. O acesso será liberado por código de e-mail.')};
 $('#saveDealDetails').onclick=saveDealDetailChanges;
 function winActiveDeal(){const deals=getDeals(),deal=deals.find(item=>item.id===appState.activeDealId);if(!deal)return;applyWonDealRules(deal);deal.wonAt=new Date().toISOString();createProvisionalReceipt(deal);addEntityHistory(deal,'Venda ganha','Negociação marcada como ganha');addEntityHistory(deal,'Recebimento criado',`${formatMoney(deal.value)} previsto · vencimento ${formatDate(deal.dueDate)}`);saveDeals(deals);openDealDrawer(deal.id);if(appState.currentView==='pipeline')renderPipeline($('#dealSearch').value);openReceiptModal(deal.id,true);showMicroCelebration('sale',formatMoney(deal.value))}
 $('#markWon').onclick=winActiveDeal;
@@ -582,29 +548,17 @@ $('#markReceived').onclick=()=>{const value=Number($('#drawerDealValue').value);
 $('#interactionForm').onsubmit=event=>{event.preventDefault();const text=new FormData(event.target).get('text').trim();if(!text)return;const clients=getClients();const client=clients.find(item=>item.id===appState.activeClientId);client.interactions=client.interactions||[];client.interactions.unshift({id:'interaction-'+Date.now(),title:'Interação registrada',text,date:new Date().toISOString()});addEntityHistory(client,'Cliente atualizado','Nova interação registrada');saveClients(clients);event.target.reset();openClientDrawer(client.id)};
 $('#exportBackup').onclick=exportBackup;$('#exportClientsCsv').onclick=exportClientsCsv;
 
-function logout(){sessionStorage.removeItem(SESSION);location.reload()}
+function logout(){sessionStorage.removeItem(SESSION);if(clerkIdentity){window.parent.postMessage({type:'niviontech:sign-out'},location.origin);return}location.href='/'}
 $('#logoutButton').onclick=logout;
 $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
-function revealApplication(){document.body.classList.remove('app-booting')}
-window.addEventListener('error',revealApplication);
-window.addEventListener('unhandledrejection',revealApplication);
-setTimeout(revealApplication,9000);
+if(clerkIdentity)migrateClerkIdentity(localStorage,sessionStorage,clerkIdentity);
 bootstrapCloudSync().then(result=>{
   if(result.reloading)return;
-  revealApplication();
-  try{initialize()}catch(error){
-    console.error('Falha ao montar o CRM',error);
-    const owner=getOwner();
-    if(owner){appState.currentUser=owner;setScreen('appScreen')}
-    else setScreen('authScreen');
-  }
-}).catch(error=>{
-  console.error('Falha ao iniciar o CRM',error);
-  revealApplication();
-  setScreen(getOwner()?'appScreen':'authScreen');
+  initialize();
+  requestAnimationFrame(()=>document.body.classList.remove('app-booting'));
 });
 renderMenuNewBadges();
 function renderRoleFocus(){
@@ -883,7 +837,8 @@ function installOrbitAttention(){
   $('#closeOrbitAttention').addEventListener('click',closeOrbitAttention);
   $('#orbitAttentionBackdrop').addEventListener('click',closeOrbitAttention);
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeOrbitAttention()});
-  new MutationObserver(refreshOrbitAttention).observe(document.body,{attributes:true,subtree:true,attributeFilter:['class','style']});
+  const appScreen=$('#appScreen');
+  if(appScreen)new MutationObserver(refreshOrbitAttention).observe(appScreen,{attributes:true,attributeFilter:['class']});
   refreshOrbitAttention();
 }
 

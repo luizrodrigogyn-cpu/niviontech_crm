@@ -2,11 +2,21 @@ export const SYNC_META_KEY='niviontech_sync_meta';
 export const SYNC_DEVICE_KEY='niviontech_device_id';
 const EXCLUDED_KEYS=new Set([SYNC_META_KEY,SYNC_DEVICE_KEY,'niviontech_last_backup']);
 
+function scrubCredentialFields(value){
+  if(Array.isArray(value))return value.map(scrubCredentialFields);
+  if(!value||typeof value!=='object')return value;
+  return Object.fromEntries(Object.entries(value).filter(([key])=>!['password','passwordHash','salt','password_hash','passwordSalt'].includes(key)).map(([key,item])=>[key,scrubCredentialFields(item)]));
+}
+
+function safeStoredValue(value){
+  try{return JSON.stringify(scrubCredentialFields(JSON.parse(value)))}catch{return value}
+}
+
 export function collectSyncStorage(storage){
   const snapshot={};
   for(let index=0;index<storage.length;index++){
     const key=storage.key(index);
-    if(key?.startsWith('niviontech_')&&!EXCLUDED_KEYS.has(key))snapshot[key]=String(storage.getItem(key)??'');
+    if(key?.startsWith('niviontech_')&&!EXCLUDED_KEYS.has(key))snapshot[key]=safeStoredValue(String(storage.getItem(key)??''));
   }
   return Object.fromEntries(Object.entries(snapshot).sort(([left],[right])=>left.localeCompare(right)));
 }

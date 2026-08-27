@@ -36,16 +36,12 @@
 
     <section class="access-panel">
       <form id="accessForm" class="access-card">
-        <div class="step-label" id="accessLabel">PRIMEIRO ACESSO</div>
-        <h2 id="accessTitle">Crie o acesso do proprietário</h2>
-        <p id="accessDescription">Você terá controle total das configurações e dos dados comerciais.</p>
-        <label id="nameGroup">Seu nome<input id="ownerName" autocomplete="name" placeholder="Ex.: Rodrigo Melo"></label>
-        <label>E-mail<input id="ownerEmail" type="email" autocomplete="email" placeholder="voce@empresa.com" required></label>
-        <label id="passwordGroup" class="hidden">Senha<input id="ownerPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Mínimo de 6 caracteres"></label>
-        <button type="submit" class="primary wide" id="accessButton">Continuar</button>
+        <div class="step-label" id="accessLabel">ACESSO SEGURO</div>
+        <h2 id="accessTitle">Entre pelo endereço principal</h2>
+        <p id="accessDescription">O NivionTech CRM usa código temporário por e-mail e não armazena senhas neste navegador.</p>
+        <button type="submit" class="primary wide" id="accessButton">Ir para o acesso seguro</button>
         <p id="accessMessage" class="message" role="alert"></p>
-        <div class="security-note"><span>✓</span><small>Acesso confirmado com segurança pela sua conta ChatGPT.</small></div>
-        <button type="button" class="access-mode-toggle" id="accessModeToggle" hidden>Já tenho acesso · Entrar</button>
+        <div class="security-note"><span>✓</span><small>Senhas locais foram removidas definitivamente.</small></div>
       </form>
     </section>
   </main>
@@ -63,7 +59,7 @@
 
   <main id="appScreen" class="app hidden">
     <aside class="sidebar">
-      <a class="logo brand-logo-compact" href="#"><span class="brand-symbol"><img src="assets/niviontech-symbol.png" alt=""></span><strong>NivionTech</strong><b>CRM</b></a>
+      <a class="logo brand-logo-compact tenant-brand" href="#" aria-label="Identidade da empresa"><span class="brand-symbol"><img id="sidebarCompanyLogo" src="assets/niviontech-symbol.png" alt=""></span><div class="tenant-brand-copy"><strong id="sidebarCompanyName">NivionTech</strong><b>NivionTech CRM</b></div></a>
       <nav>
         <button class="active" data-view="today"><i>⌂</i>Hoje</button>
         <button data-view="pipeline"><i>◇</i>Funil</button>
@@ -212,7 +208,7 @@
   <div id="proposalModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-proposal-modal></div><form id="proposalForm" class="modal-card"><header><div><p class="overline">NOVA OFERTA</p><h2>Criar proposta</h2></div><button type="button" data-close-proposal-modal>×</button></header><div class="deal-form-grid"><label class="full-field">Título da proposta<input name="title" required></label><label>Cliente<input name="client" required></label><label>Oportunidade<select name="dealId" id="proposalDeal"></select></label><label>Valor<input name="value" type="number" min="0" step="0.01" required></label><label>Validade<input name="validUntil" type="date" required></label><label>Status<select name="status"><option value="draft">Rascunho</option><option value="sent">Enviada</option><option value="approved">Aprovada</option><option value="refused">Recusada</option></select></label><label class="full-field">Observações<input name="notes"></label></div><footer><button type="button" class="secondary" data-close-proposal-modal>Cancelar</button><button class="primary" type="submit">Salvar proposta</button></footer></form></div>
   <div id="receiptModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-receipt-modal></div><form id="receiptForm" class="modal-card"><header><div><p id="receiptModalEyebrow" class="overline">ATUALIZAR PAGAMENTO</p><h2 id="receiptModalTitle">Recebimento</h2><p id="receiptModalPrompt" class="receipt-modal-prompt"></p></div><button type="button" data-close-receipt-modal>×</button></header><input type="hidden" name="dealId"><div class="deal-form-grid"><label>Valor previsto<input name="total" type="number" min="0" step="0.01" required></label><label>Valor recebido<input name="received" type="number" min="0" step="0.01" required></label><label>Vencimento<input name="dueDate" type="date" required></label><label>Status<select name="status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="received">Recebido</option></select></label></div><footer><button type="button" class="secondary" data-close-receipt-modal>Salvar depois</button><button class="primary" type="submit">Salvar recebimento</button></footer></form></div>
   <div id="microCelebration" class="micro-celebration" aria-live="polite" aria-hidden="true"><div class="celebration-ripple"></div><div class="celebration-ripple second"></div><div class="celebration-symbol"></div><div><strong id="celebrationTitle"></strong><span id="celebrationMessage"></span></div></div>
-  <div id="userModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-user-modal></div><form id="userForm" class="modal-card"><header><div><p class="overline">NOVO ACESSO LOCAL</p><h2>Adicionar colaborador</h2></div><button type="button" data-close-user-modal>×</button></header><div class="deal-form-grid"><label>Nome completo<input name="name" required></label><label>E-mail<input name="email" type="email" required></label><label>Senha inicial<input name="password" type="password" minlength="6" required></label><label>Perfil ativo<select name="profile"><option>Colaborador comercial</option><option>Gestor Comercial</option><option>SDR</option><option>Executivo de Contas</option><option>Pós-venda</option></select></label><label>Visibilidade<select name="visibility"><option value="own">Somente carteira própria</option><option value="all">Todo o funil</option></select></label><label>Status<select name="status"><option value="active">Ativo</option><option value="inactive">Inativo</option></select></label></div><footer><button type="button" class="secondary" data-close-user-modal>Cancelar</button><button class="primary" type="submit">Criar acesso</button></footer></form></div>
+  <div id="userModal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" data-close-user-modal></div><form id="userForm" class="modal-card"><header><div><p class="overline">NOVO COLABORADOR</p><h2>Adicionar colaborador</h2></div><button type="button" data-close-user-modal>×</button></header><div class="deal-form-grid"><label>Nome completo<input name="name" required></label><label>E-mail<input name="email" type="email" required></label><label>Perfil ativo<select name="profile"><option>Colaborador comercial</option><option>Gestor Comercial</option><option>SDR</option><option>Executivo de Contas</option><option>Pós-venda</option></select></label><label>Visibilidade<select name="visibility"><option value="own">Somente carteira própria</option><option value="all">Todo o funil</option></select></label><label>Status<select name="status"><option value="active">Ativo</option><option value="inactive">Inativo</option></select></label></div><footer><button type="button" class="secondary" data-close-user-modal>Cancelar</button><button class="primary" type="submit">Salvar colaborador</button></footer></form></div>
 
   <div id="dealDrawer" class="drawer hidden" aria-hidden="true">
     <div class="drawer-backdrop" data-close-drawer></div>
@@ -242,6 +238,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-<script type="module" src="app.js?v=20260826-39"></script>
+<script type="module" src="app.js?v=20260826-35"></script>
 </body>
 </html>

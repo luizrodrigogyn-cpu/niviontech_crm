@@ -1,12 +1,13 @@
-import { authenticatedUserId, ensureSchema, getOrgByInviteCode, publicSnapshot, response } from '../../../../db/org';
+import { auth } from '@clerk/nextjs/server';
+import { ensureSchema, getOrgByInviteCode, publicSnapshot, response } from '../../../../db/org';
 
 export const dynamic = 'force-dynamic';
 
 // Um colega usa o código de convite mostrado em "Equipe e acessos" para entrar na MESMA
 // organização do dono da conta — a partir daqui os dois compartilham o mesmo snapshot de dados.
 export async function POST(request: Request) {
-  const userId = authenticatedUserId(request);
-  if (!userId) return response({ error: 'authentication_required' }, 401);
+  const { isAuthenticated, userId } = await auth();
+  if (!isAuthenticated || !userId) return response({ error: 'authentication_required' }, 401);
 
   let body: Record<string, unknown>;
   try {

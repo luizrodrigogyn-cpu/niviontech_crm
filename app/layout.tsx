@@ -1,4 +1,5 @@
 import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export const metadata = {
   title: 'NivionTech CRM',
@@ -6,5 +7,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}</body></html>;
+  return <ClerkProvider dynamic><html lang="pt-BR"><body>{children}</body></html></ClerkProvider>;
 }

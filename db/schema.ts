@@ -21,3 +21,11 @@ export const crmOrgMembers=sqliteTable('crm_org_members',{
   role:text('role').notNull().default('member'), // 'owner' | 'member'
   joinedAt:text('joined_at').notNull(),
 });
+
+export const crmMemberProfiles=sqliteTable('crm_member_profiles',{
+  userId:text('user_id').primaryKey(),orgId:text('org_id').notNull(),email:text('email').notNull(),displayName:text('display_name').notNull(),profile:text('profile').notNull(),updatedAt:text('updated_at').notNull(),
+});
+
+export const crmOrgSnapshots=sqliteTable('crm_org_snapshots',{
+  id:text('id').primaryKey(),orgId:text('org_id').notNull(),payload:text('payload').notNull(),revision:integer('revision').notNull(),createdAt:text('created_at').notNull(),deviceId:text('device_id').notNull(),
+});
