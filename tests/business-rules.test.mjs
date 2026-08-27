@@ -6,6 +6,7 @@ import {validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
+import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
 
 const tests=[];
 function test(name,run){tests.push({name,run})}
@@ -146,6 +147,75 @@ test('sincronização baixa a nuvem apenas quando a cópia local está limpa',()
   assert.equal(resolveStartupSync({localSnapshot:local,cloudSnapshot:cloud,meta:cleanMeta}).action,'download');
   const changed={...local,niviontech_clients:'[]'};
   assert.equal(resolveStartupSync({localSnapshot:changed,cloudSnapshot:cloud,meta:cleanMeta}).action,'conflict');
+});
+
+function fakeStorage(){
+  const data=new Map();
+  return {getItem:key=>data.has(key)?data.get(key):null,setItem:(key,value)=>data.set(key,String(value)),removeItem:key=>data.delete(key)};
+}
+
+test('abertura: toca apenas uma vez por sessão de aba',()=>{
+  const storage=fakeStorage();
+  assert.equal(shouldPlayBrandIntro(storage),true);
+  markBrandIntroPlayed(storage);
+  assert.equal(shouldPlayBrandIntro(storage),false);
+});
+
+test('abertura: nunca lança erro mesmo com sessionStorage indisponível',()=>{
+  const brokenStorage={getItem(){throw new Error('bloqueado')},setItem(){throw new Error('bloqueado')}};
+  assert.doesNotThrow(()=>markBrandIntroPlayed(brokenStorage));
+  assert.equal(shouldPlayBrandIntro(brokenStorage),true);
+});
+
+test('abertura: duração total fica próxima de 2 segundos, como pedido no feedback',()=>{
+  const total=INTRO_TIMINGS.driftMs+INTRO_TIMINGS.convergeMs+INTRO_TIMINGS.solidifyMs+INTRO_TIMINGS.fadeMs;
+  assert.ok(total<=2100,`duração total (${total}ms) deveria ficar em torno de 2000ms`);
+  assert.ok(total>=1500,`duração total (${total}ms) não pode ficar curta demais a ponto de parecer um corte seco`);
+});
+
+test('abertura: callOnce garante que onDone nunca dispare mais de uma vez',()=>{
+  let calls=0;
+  const done=callOnce(()=>{calls++});
+  done();done();done();
+  assert.equal(calls,1);
+});
+
+test('abertura: símbolo fica maior no celular do que no desktop',()=>{
+  const mobile=resolveLogoScale(390,844);
+  const desktop=resolveLogoScale(1440,900);
+  assert.ok(mobile>desktop,'a escala do símbolo no celular deveria ser maior que no desktop');
+});
+
+test('abertura: símbolo no desktop ficou ~10% maior, como pedido no segundo feedback',()=>{
+  const desktop=resolveLogoScale(1440,900);
+  assert.ok(desktop>=.32&&desktop<=.34,`escala do desktop (${desktop}) deveria ficar em torno de 10% acima da versão anterior (0.3)`);
+});
+
+test('abertura: densidade de pixel tem teto para não sobrecarregar telas muito grandes',()=>{
+  const small=resolveDpr(390,844,3);
+  assert.equal(small,3);
+  const huge=resolveDpr(3840,2160,3);
+  assert.ok(huge<3,'em telas 4K a densidade deveria ser reduzida automaticamente');
+  assert.ok(huge>=1);
+});
+
+test('abertura: rotação/redimensionamento reposiciona partículas e alvos proporcionalmente',()=>{
+  const particles=[{x:100,y:200,startX:50,startY:80,tx:300,ty:400}];
+  // Sem novos alvos amostrados (caso comum em Node, sem DOM): usa a mesma proporção como fallback.
+  rescaleParticles(particles,2,.5,[]);
+  assert.equal(particles[0].x,200);
+  assert.equal(particles[0].y,100);
+  assert.equal(particles[0].startX,100);
+  assert.equal(particles[0].startY,40);
+  assert.equal(particles[0].tx,600);
+  assert.equal(particles[0].ty,200);
+});
+
+test('abertura: quando há novos alvos do glifo, eles substituem os alvos antigos (não só reescalam)',()=>{
+  const particles=[{x:10,y:10,startX:10,startY:10,tx:999,ty:999}];
+  rescaleParticles(particles,1,1,[{x:42,y:77}]);
+  assert.equal(particles[0].tx,42);
+  assert.equal(particles[0].ty,77);
 });
 
 let failures=0;

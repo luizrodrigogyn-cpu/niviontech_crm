@@ -2,6 +2,7 @@
 
 import { useAuth, useClerk, useSignIn, useUser } from '@clerk/nextjs';
 import { useEffect, useMemo, useState } from 'react';
+import BrandIntroOverlay from './brand-intro-overlay';
 
 type BootstrapIdentity = {
   userId: string;
@@ -97,15 +98,17 @@ export default function CrmGate() {
     }
   }
 
+  // A abertura (BrandIntroOverlay) é sempre incluída como um elemento irmão, por cima de qualquer um
+  // dos três estados abaixo — ela decide sozinha (uma vez por sessão de aba) se tem algo para
+  // mostrar; nenhuma das três ramificações de carregamento/acesso/aplicativo foi alterada.
+  let body: React.ReactNode;
+
   if (!isLoaded || (isSignedIn && !identity)) {
-    return <main className="secure-loading"><span className="secure-orbit">O</span><strong>Preparando seu CRM...</strong><small>Seus dados permanecem protegidos.</small></main>;
-  }
-
-  if (isSignedIn && identity) {
-    return <main className="crm-shell"><iframe title="NivionTech CRM" src={iframeUrl} /></main>;
-  }
-
-  return (
+    body = <main className="secure-loading"><span className="secure-orbit">O</span><strong>Preparando seu CRM...</strong><small>Seus dados permanecem protegidos.</small></main>;
+  } else if (isSignedIn && identity) {
+    body = <main className="crm-shell"><iframe title="NivionTech CRM" src={iframeUrl} /></main>;
+  } else {
+    body = (
     <main className="secure-auth">
       <section className="secure-brand">
         <div className="secure-grid" />
@@ -129,5 +132,13 @@ export default function CrmGate() {
         </form>
       </section>
     </main>
+    );
+  }
+
+  return (
+    <>
+      <BrandIntroOverlay ready={isLoaded} />
+      {body}
+    </>
   );
 }
