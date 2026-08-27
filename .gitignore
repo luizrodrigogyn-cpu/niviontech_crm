@@ -8,3 +8,5 @@ coverage/
 .next/
 .wrangler/
 *.log
+.vinext/
+tsconfig.tsbuildinfo
