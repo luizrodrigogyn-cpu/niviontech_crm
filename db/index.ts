@@ -28,6 +28,12 @@ function localD1() {
           }
           return null;
         },
+        async all<T>() {
+          if (normalized.includes('from crm_org_snapshots where org_id')) {
+            return { results: [...memory.snapshots.values()].filter(row => row.org_id === values[0]) as T[] };
+          }
+          return { results: [] as T[] };
+        },
         async run() {
           if (normalized.startsWith('create ')) return { meta: { changes: 0 } };
           if (normalized.startsWith('insert into crm_orgs')) {
@@ -59,10 +65,24 @@ function localD1() {
             return { meta: { changes: Math.max(0, rows.length - 30) } };
           }
           if (normalized.startsWith('update crm_orgs set payload')) {
+            if (normalized.includes('where org_id = ?') && values.length === 2) {
+              const [payload, org_id] = values;
+              const current = memory.orgs.get(String(org_id));
+              if (!current) return { meta: { changes: 0 } };
+              memory.orgs.set(String(org_id), { ...current, payload });
+              return { meta: { changes: 1 } };
+            }
             const [payload, revision, updated_at, device_id, org_id, expectedRevision] = values;
             const current = memory.orgs.get(String(org_id));
             if (!current || Number(current.revision) !== Number(expectedRevision)) return { meta: { changes: 0 } };
             memory.orgs.set(String(org_id), { ...current, payload, revision, updated_at, device_id });
+            return { meta: { changes: 1 } };
+          }
+          if (normalized.startsWith('update crm_org_snapshots set payload')) {
+            const [payload, id] = values;
+            const current = memory.snapshots.get(String(id));
+            if (!current) return { meta: { changes: 0 } };
+            memory.snapshots.set(String(id), { ...current, payload });
             return { meta: { changes: 1 } };
           }
           return { meta: { changes: 0 } };

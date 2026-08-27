@@ -1,12 +1,18 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { resolveMembership, response, upsertMemberProfile } from '../../../../db/org';
+import { migrateOrgEncryption, recordLoginAudit, resolveMembership, response, upsertMemberProfile } from '../../../../db/org';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { isAuthenticated, userId } = await auth();
-  if (!isAuthenticated || !userId) return response({ error: 'authentication_required' }, 401);
+  const { isAuthenticated, userId, sessionId } = await auth();
+  if (!isAuthenticated || !userId || !sessionId) return response({ error: 'authentication_required' }, 401);
   const client = await clerkClient();
+  const maxActiveSessions = Math.max(1, Math.min(10, Number(process.env.MAX_ACTIVE_SESSIONS || 3)));
+  const sessions = await client.sessions.getSessionList({ userId, status: 'active', limit: 100 });
+  if (sessions.totalCount > maxActiveSessions) {
+    const removable = sessions.data.filter(session => session.id !== sessionId).slice(maxActiveSessions - 1);
+    await Promise.all(removable.map(session => client.sessions.revokeSession(session.id)));
+  }
   const user = await client.users.getUser(userId);
   const email = user.primaryEmailAddress?.emailAddress?.trim().toLowerCase() || '';
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || email.split('@')[0] || 'Usuário';
@@ -16,6 +22,9 @@ export async function GET() {
     preferredRole: metadata.niviontechOrgId ? 'member' : 'owner',
   });
   const profile = membership.role === 'owner' ? 'Proprietário/Admin' : metadata.niviontechRole || 'Colaborador comercial';
+  await migrateOrgEncryption(membership.orgId);
   await upsertMemberProfile({ userId, orgId: membership.orgId, email, name, profile });
-  return response({ userId, orgId: membership.orgId, role: membership.role, profile, name, email });
+  const activeSessions = Math.min(sessions.totalCount, maxActiveSessions);
+  await recordLoginAudit({ userId, orgId: membership.orgId, sessionId, activeSessions });
+  return response({ userId, orgId: membership.orgId, role: membership.role, profile, name, email, activeSessions, maxActiveSessions });
 }

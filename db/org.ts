@@ -1,4 +1,5 @@
 import { getD1 } from './index';
+import { decryptPayload, encryptPayload, encryptText, isEncrypted, sanitizeCrmPayload } from './crypto';
 
 export const MAX_PAYLOAD_BYTES = 2_500_000;
 
@@ -6,7 +7,7 @@ export type OrgRow = { org_id: string; payload: string; revision: number; update
 export type MemberRow = { user_id: string; org_id: string; role: string; joined_at: string };
 
 export function response(body: unknown, status = 200) {
-  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
+  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
 }
 
 export function safePayload(value: unknown) {
@@ -18,16 +19,17 @@ export function safePayload(value: unknown) {
     if (!key.startsWith('niviontech_') || typeof item !== 'string') return null;
     payload[key] = item;
   }
-  const serialized = JSON.stringify(payload);
-  return new TextEncoder().encode(serialized).byteLength <= MAX_PAYLOAD_BYTES ? { payload, serialized } : null;
+  const clean = sanitizeCrmPayload(payload);
+  const serialized = JSON.stringify(clean);
+  return new TextEncoder().encode(serialized).byteLength <= MAX_PAYLOAD_BYTES ? { payload: clean, serialized } : null;
 }
 
 type SnapshotFields = { payload: string; revision: number; updated_at: string; device_id: string };
 
-export function publicSnapshot(row: SnapshotFields | null) {
+export async function publicSnapshot(row: SnapshotFields | null) {
   if (!row) return null;
   try {
-    return { payload: JSON.parse(row.payload), revision: row.revision, updatedAt: row.updated_at, deviceId: row.device_id };
+    return { payload: await decryptPayload(row.payload), revision: row.revision, updatedAt: row.updated_at, deviceId: row.device_id };
   } catch {
     return null;
   }
@@ -75,6 +77,17 @@ export async function ensureSchema() {
     device_id TEXT NOT NULL
   )`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS crm_org_snapshots_org_idx ON crm_org_snapshots (org_id, revision DESC)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS crm_org_members_org_idx ON crm_org_members (org_id, user_id)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS crm_member_profiles_org_idx ON crm_member_profiles (org_id, user_id)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS crm_login_audit (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    org_id TEXT NOT NULL,
+    session_fingerprint TEXT NOT NULL,
+    active_sessions INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  )`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS crm_login_audit_user_idx ON crm_login_audit (user_id, created_at DESC)`).run();
   return db;
 }
 
@@ -91,7 +104,7 @@ async function createOrgForUser(userId: string) {
       // evitando um falso "conflito" entre o dispositivo novo e um snapshot vazio.
       await db.prepare(
         'INSERT INTO crm_orgs (org_id, payload, revision, updated_at, device_id, invite_code) VALUES (?, ?, 0, ?, ?, ?)'
-      ).bind(orgId, '{}', updatedAt, 'server', inviteCode).run();
+      ).bind(orgId, await encryptPayload({}), updatedAt, 'server', inviteCode).run();
       await db.prepare(
         'INSERT INTO crm_org_members (user_id, org_id, role, joined_at) VALUES (?, ?, ?, ?)'
       ).bind(userId, orgId, 'owner', updatedAt).run();
@@ -121,16 +134,18 @@ export async function resolveMembership(userId: string, options: { preferredOrgI
 
 export async function upsertMemberProfile(profile: { userId: string; orgId: string; email: string; name: string; profile: string }) {
   const db = await ensureSchema();
+  const encryptedEmail = await encryptText(profile.email);
+  const encryptedName = await encryptText(profile.name);
   await db.prepare(`INSERT INTO crm_member_profiles (user_id, org_id, email, display_name, profile, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(user_id) DO UPDATE SET org_id=excluded.org_id,email=excluded.email,display_name=excluded.display_name,profile=excluded.profile,updated_at=excluded.updated_at`)
-    .bind(profile.userId, profile.orgId, profile.email, profile.name, profile.profile, new Date().toISOString()).run();
+    .bind(profile.userId, profile.orgId, encryptedEmail, encryptedName, profile.profile, new Date().toISOString()).run();
 }
 
 export async function saveAutomaticSnapshot(orgId: string, row: { payload: string; revision: number; device_id: string }) {
   const db = await ensureSchema();
   await db.prepare('INSERT INTO crm_org_snapshots (id, org_id, payload, revision, created_at, device_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(crypto.randomUUID(), orgId, row.payload, row.revision, new Date().toISOString(), row.device_id).run();
+    .bind(crypto.randomUUID(), orgId, isEncrypted(row.payload) ? row.payload : await encryptPayload(JSON.parse(row.payload)), row.revision, new Date().toISOString(), row.device_id).run();
   await db.prepare(`DELETE FROM crm_org_snapshots WHERE org_id = ? AND id NOT IN (
     SELECT id FROM crm_org_snapshots WHERE org_id = ? ORDER BY revision DESC LIMIT 30
   )`).bind(orgId, orgId).run();
@@ -144,4 +159,27 @@ export async function getOrgRow(orgId: string) {
 export async function getOrgByInviteCode(inviteCode: string) {
   const db = await ensureSchema();
   return db.prepare('SELECT org_id, payload, revision, updated_at, device_id, invite_code FROM crm_orgs WHERE invite_code = ?').bind(inviteCode).first<OrgRow>();
+}
+
+export async function migrateOrgEncryption(orgId: string) {
+  const db = await ensureSchema();
+  const org = await getOrgRow(orgId);
+  if (org && !isEncrypted(org.payload)) {
+    const encrypted = await encryptPayload(JSON.parse(org.payload));
+    await db.prepare('UPDATE crm_orgs SET payload = ? WHERE org_id = ?').bind(encrypted, orgId).run();
+    org.payload = encrypted;
+  }
+  const snapshots = await db.prepare('SELECT id, payload FROM crm_org_snapshots WHERE org_id = ?').bind(orgId).all<{ id: string; payload: string }>();
+  for (const row of snapshots.results || []) {
+    if (!isEncrypted(row.payload)) await db.prepare('UPDATE crm_org_snapshots SET payload = ? WHERE id = ?').bind(await encryptPayload(JSON.parse(row.payload)), row.id).run();
+  }
+  return org;
+}
+
+export async function recordLoginAudit(input: { userId: string; orgId: string; sessionId: string; activeSessions: number }) {
+  const db = await ensureSchema();
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input.sessionId));
+  const fingerprint = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  await db.prepare('INSERT INTO crm_login_audit (id, user_id, org_id, session_fingerprint, active_sessions, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(crypto.randomUUID(), input.userId, input.orgId, fingerprint, input.activeSessions, new Date().toISOString()).run();
 }

@@ -29,3 +29,7 @@ export const crmMemberProfiles=sqliteTable('crm_member_profiles',{
 export const crmOrgSnapshots=sqliteTable('crm_org_snapshots',{
   id:text('id').primaryKey(),orgId:text('org_id').notNull(),payload:text('payload').notNull(),revision:integer('revision').notNull(),createdAt:text('created_at').notNull(),deviceId:text('device_id').notNull(),
 });
+
+export const crmLoginAudit=sqliteTable('crm_login_audit',{
+  id:text('id').primaryKey(),userId:text('user_id').notNull(),orgId:text('org_id').notNull(),sessionFingerprint:text('session_fingerprint').notNull(),activeSessions:integer('active_sessions').notNull(),createdAt:text('created_at').notNull(),
+});

@@ -40,6 +40,6 @@ export async function POST(request: Request) {
       .run();
   }
 
-  const snapshot = org.revision > 0 ? publicSnapshot(org) : null;
+  const snapshot = org.revision > 0 ? await publicSnapshot(org) : null;
   return response({ orgId: org.org_id, role: existingMembership?.role ?? 'member', snapshot });
 }

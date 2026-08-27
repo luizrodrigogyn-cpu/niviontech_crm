@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { ensureSchema, getOrgRow, publicSnapshot, resolveMembership, response, safePayload, saveAutomaticSnapshot } from '../../../db/org';
+import { ensureSchema, getOrgRow, migrateOrgEncryption, publicSnapshot, resolveMembership, response, safePayload, saveAutomaticSnapshot } from '../../../db/org';
+import { encryptPayload } from '../../../db/crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,10 @@ export async function GET() {
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated || !userId) return response({ error: 'authentication_required' }, 401);
   const { orgId, role } = await resolveMembership(userId);
-  const org = await getOrgRow(orgId);
+  const org = await migrateOrgEncryption(orgId);
   // revision 0 = organização provisionada mas nunca sincronizada de verdade; trate como "sem nuvem ainda"
   // para não disparar um falso conflito no primeiro acesso do dispositivo.
-  const snapshot = org && org.revision > 0 ? publicSnapshot(org) : null;
+  const snapshot = org && org.revision > 0 ? await publicSnapshot(org) : null;
   return response({
     orgId,
     role,
@@ -43,13 +44,14 @@ export async function POST(request: Request) {
   if (!safe) return response({ error: 'invalid_payload' }, 400);
 
   const db = await ensureSchema();
+  await migrateOrgEncryption(orgId);
   const existing = await db
     .prepare('SELECT payload, revision, updated_at, device_id FROM crm_orgs WHERE org_id = ?')
     .bind(orgId)
     .first<SnapshotRow>();
 
   if (existing && !force && existing.revision !== baseRevision) {
-    return response({ error: 'revision_conflict', orgId, role, snapshot: publicSnapshot(existing) }, 409);
+    return response({ error: 'revision_conflict', orgId, role, snapshot: await publicSnapshot(existing) }, 409);
   }
 
   if (existing?.revision) await saveAutomaticSnapshot(orgId, existing);
@@ -58,12 +60,12 @@ export async function POST(request: Request) {
   const nextRevision = (existing?.revision ?? 0) + 1;
   const result = await db
     .prepare('UPDATE crm_orgs SET payload = ?, revision = ?, updated_at = ?, device_id = ? WHERE org_id = ? AND revision = ?')
-    .bind(safe.serialized, nextRevision, updatedAt, deviceId, orgId, existing?.revision ?? 0)
+    .bind(await encryptPayload(safe.payload), nextRevision, updatedAt, deviceId, orgId, existing?.revision ?? 0)
     .run();
 
   if (!result.meta.changes) {
     const current = await getOrgRow(orgId);
-    return response({ error: 'revision_conflict', orgId, role, snapshot: publicSnapshot(current ?? null) }, 409);
+    return response({ error: 'revision_conflict', orgId, role, snapshot: await publicSnapshot(current ?? null) }, 409);
   }
   return response({ orgId, role, snapshot: { payload: safe.payload, revision: nextRevision, updatedAt, deviceId } });
 }
