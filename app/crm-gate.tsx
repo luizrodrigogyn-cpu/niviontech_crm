@@ -134,7 +134,7 @@ export default function CrmGate() {
 
       <section className="marketing-section" id="publico"><small>PARA QUEM É</small><h2>Feito para quem vende com processo.</h2><div className="audience-grid">{['Pequenas empresas','Equipes comerciais','Prestadores de serviços','Consultorias','Negócios B2B','Empresas em estruturação'].map((item,index)=><article key={item}><i>{['▣','▥','⌕','◉','♙','▤'][index]}</i><div><h3>{item}</h3><p>{['Organize as vendas sem contratar um time de sistemas.','Metas, funil e responsabilidades claras para todos.','Propostas, contatos e recorrência sob controle.','Ciclos longos acompanhados etapa por etapa.','Múltiplos contatos e decisores em cada oportunidade.','Crie um processo de vendas de verdade.'][index]}</p></div></article>)}</div></section>
 
-      <section className="marketing-access" id="acesso"><div><small>COMECE AGORA</small><h2>Venda com mais clareza.<br />Cresça com mais controle.</h2><p>Entre com seu e-mail corporativo. O acesso continua protegido pelo Clerk e por código temporário.</p></div><form className="secure-card" onSubmit={step === 'email' ? sendCode : verifyCode}>
+      <section className="marketing-access" id="acesso"><div><small>COMECE AGORA</small><h2>Venda com mais clareza.<br />Cresça com mais controle.</h2><p>Entre com seu e-mail corporativo. Seu acesso é protegido e validado por código temporário.</p></div><form className="secure-card" onSubmit={step === 'email' ? sendCode : verifyCode}>
           <div className="secure-label">ACESSO SEGURO</div>
           <h2>{step === 'email' ? 'Acesse sua empresa' : 'Confira seu e-mail'}</h2>
           <p>{step === 'email' ? 'Receba um código para continuar seu dia comercial.' : `Enviamos um código de 6 dígitos para ${email}.`}</p>
