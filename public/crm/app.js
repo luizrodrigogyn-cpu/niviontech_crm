@@ -66,10 +66,15 @@ const initialActivities=[{id:'activity-1',title:'Apresentar proposta',type:'Reun
 function getOwner(){try{return JSON.parse(localStorage.getItem(STORAGE.owner))}catch{return null}}
 function getCompany(){try{const company=JSON.parse(localStorage.getItem(STORAGE.company));if(company&&!company.plan){company.plan='essential';localStorage.setItem(STORAGE.company,JSON.stringify(company))}return company}catch{return null}}
 function saveCompany(company){localStorage.setItem(STORAGE.company,JSON.stringify(company));return company}
+function applyAdaptiveImageFit(image,isCustom=true){
+  if(!image)return;
+  const adapt=()=>{const ratio=image.naturalWidth/Math.max(1,image.naturalHeight);image.dataset.fit=isCustom&&ratio<=1.4?'cover':'contain'};
+  image.complete&&image.naturalWidth?adapt():image.addEventListener('load',adapt,{once:true});
+}
 function renderCompanyBrand(){
   const company=getCompany()||{},name=(company.fantasyName||company.name||'Sua empresa').trim(),logo=$('#sidebarCompanyLogo'),label=$('#sidebarCompanyName');
   if(label){label.textContent=name;label.title=name}
-  if(logo){logo.src=company.logoData||'assets/niviontech-symbol.png';logo.alt=company.logoData?`Logo ${name}`:'NivionTech CRM'}
+  if(logo){logo.src=company.logoData||'assets/niviontech-symbol.png';logo.alt=company.logoData?`Logo ${name}`:'NivionTech CRM';applyAdaptiveImageFit(logo,Boolean(company.logoData))}
 }
 function resizeCompanyLogo(file){
   return new Promise((resolve,reject)=>{
@@ -468,7 +473,7 @@ function closeReceiptModal(){$('#receiptModal').classList.add('hidden');$('#rece
 function renderSettings(){
   const company=getCompany()||{},owner=getOwner()||{},brandName=company.fantasyName||company.name||'';
   $('#companySettings').innerHTML=`<section class="company-brand-config"><div class="company-brand-preview"><span>${company.logoData?`<img src="${company.logoData}" alt="Logo ${escapeHtml(brandName)}">`:'N'}</span><div><small>IDENTIDADE NO CRM</small><strong>${escapeHtml(brandName||'Sua empresa')}</strong><em>NivionTech CRM</em></div></div><label>Nome fantasia<input id="companyFantasyName" maxlength="48" value="${escapeHtml(brandName)}" placeholder="Ex.: Almeida Engenharia"></label><label class="company-logo-field">Logo da empresa<input id="companyLogoInput" type="file" accept="image/png,image/jpeg,image/webp"><span>PNG, JPG ou WebP · até 3 MB</span></label><div class="company-brand-actions"><button type="button" id="saveCompanyBrand" class="primary">Salvar identidade</button>${company.logoData?'<button type="button" id="removeCompanyLogo" class="secondary">Remover logo</button>':''}</div><p id="companyBrandMessage" role="status"></p></section><div><span>Razão de cadastro</span><b>${escapeHtml(company.name||'Não informada')}</b></div><div><span>Segmento</span><b>${escapeHtml(company.segment||'Não informado')}</b></div><div><span>Equipe</span><b>${escapeHtml(company.size||'Não informada')}</b></div><div><span>Plano</span><b>${companyPlanLabel(company.plan)}</b></div><div><span>Proprietário</span><b>${escapeHtml(owner.name||'')}</b></div><div><span>Armazenamento</span><b>Local e sincronização privada</b></div>`;
-  let pendingLogo=company.logoData||'';const message=$('#companyBrandMessage'),fileInput=$('#companyLogoInput');
+  let pendingLogo=company.logoData||'';const message=$('#companyBrandMessage'),fileInput=$('#companyLogoInput'),preview=$('.company-brand-preview img');applyAdaptiveImageFit(preview,Boolean(company.logoData));
   fileInput.onchange=async()=>{try{pendingLogo=await resizeCompanyLogo(fileInput.files?.[0]);message.textContent='Logo pronta. Clique em salvar identidade.'}catch(error){fileInput.value='';message.textContent=error.message}};
   $('#saveCompanyBrand').onclick=()=>{const fantasyName=$('#companyFantasyName').value.trim();if(!fantasyName){message.textContent='Informe o nome fantasia da empresa.';return}saveCompany({...company,fantasyName,logoData:pendingLogo,brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
   const remove=$('#removeCompanyLogo');if(remove)remove.onclick=()=>{saveCompany({...company,fantasyName:$('#companyFantasyName').value.trim()||brandName,logoData:'',brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
