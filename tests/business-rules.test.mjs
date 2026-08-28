@@ -123,6 +123,16 @@ test('Fase 3: diagnóstico aponta lacunas que o vendedor precisa descobrir',()=>
   assert.ok(result.score<50);
 });
 
+test('Nova Fase 1: conversa extrai decisor, concorrente, compromisso e evidências',()=>{
+  const result=analyzeCommercialConversation('Temos retrabalho em planilha e o preço parece caro. A decisora é Marina Alves. Estamos comparando com Salesforce. Gostei da proposta. Enviar contrato na sexta-feira. O investimento é de R$ 18.500.',{client:{name:'Empresa Horizonte'}});
+  assert.ok(result.decisionMakers.includes('Marina Alves'));
+  assert.ok(result.competitors.includes('Salesforce'));
+  assert.ok(result.commitments.some(item=>/Enviar contrato/i.test(item)));
+  assert.ok(result.evidenceQuotes.some(item=>item.label==='Dor'));
+  assert.ok(result.suggestedUpdates.some(item=>item.field==='Decisor'));
+  assert.ok(result.suggestedUpdates.some(item=>item.field==='Concorrente'));
+});
+
 test('Fase 4: previsão considera etapa, qualificação e risco',()=>{
   const stages=[{id:'new'},{id:'proposal'},{id:'closing'},{id:'won'},{id:'lost'}];
   const healthy={id:'1',client:'A',stage:'closing',value:10000,next:'Enviar contrato',nextDate:'2026-08-30',orbitMemory:{qualificationScore:90,risk:'Saudável'}};
