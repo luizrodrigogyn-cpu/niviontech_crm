@@ -11,6 +11,7 @@ import {organizeDomain,analyzeConversationText,createHandoffSummary} from './mod
 import {analyzeCommercialConversation} from './modules/orbit-intelligence.js';
 import {buildManagementForecast} from './modules/management-intelligence.js';
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from './modules/forecast-governance.js';
+import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from './modules/playbooks.js';
 import {buildCadencePlan,cadenceProgress,cadenceTemplates} from './modules/cadences.js';
 import {buildCustomerSuccessPortfolio} from './modules/customer-success.js';
 import {analyzeBuyingCommittee,stakeholderRoles} from './modules/buying-committee.js';
@@ -33,6 +34,8 @@ const CADENCES_KEY='niviontech_cadences';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
 const CHANNEL_IMPORT_HISTORY_KEY='niviontech_channel_import_history';
 const FORECAST_SNAPSHOTS_KEY='niviontech_forecast_snapshots';
+const PLAYBOOKS_KEY='niviontech_playbooks';
+const ACTIVE_PLAYBOOK_KEY='niviontech_active_playbook';
 const authParams=new URLSearchParams(location.search);
 const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
 
@@ -287,8 +290,8 @@ function showView(view){
   const pipeline=view==='pipeline';
   const clients=view==='clients';
   const activities=view==='activities';
-  const organize=view==='organize',orbitCoach=view==='orbitCoach',cadences=view==='cadences',channels=view==='channels',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
-  const secondary=pipeline||clients||activities||channels||cadences||success||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
+  const organize=view==='organize',orbitCoach=view==='orbitCoach',playbooks=view==='playbooks',cadences=view==='cadences',channels=view==='channels',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
+  const secondary=pipeline||clients||activities||channels||cadences||success||organize||orbitCoach||playbooks||ranking||proposals||receipts||settings||team||templates||reports;
   $('#todayView').classList.toggle('hidden',secondary);
   $('#pipelineView').classList.toggle('hidden',!pipeline);
   $('#clientsView').classList.toggle('hidden',!clients);
@@ -301,9 +304,10 @@ function showView(view){
   $('#teamView').classList.toggle('hidden',!team);
   $('#templatesView').classList.toggle('hidden',!templates);
   $('#reportsView').classList.toggle('hidden',!reports);
-  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Sua rotina comercial'],channels:['Central de Canais','Agenda, e-mails e memória comercial'],cadences:['Cadências inteligentes','Automação comercial conduzida pelo Orbit'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  $('#playbooksView').classList.toggle('hidden',!playbooks);
+  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Sua rotina comercial'],channels:['Central de Canais','Agenda, e-mails e memória comercial'],cadences:['Cadências inteligentes','Automação comercial conduzida pelo Orbit'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],playbooks:['Orbit Playbooks','Processo comercial conduzido'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
-  $('#newButton').style.display=['orbitCoach','organize','channels','cadences','success','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').style.display=['orbitCoach','playbooks','organize','channels','cadences','success','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
   $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('.sidebar').classList.remove('open');
@@ -320,6 +324,7 @@ function showView(view){
   if(ranking)renderRanking();
   if(templates)renderTemplates();
   if(reports)renderReports();
+  if(playbooks)renderPlaybooks();
   if(orbitCoach)renderOrbitCoach();
   if(view==='today'){renderDateCardIdentity();renderTodayActivities()}
 }
@@ -365,6 +370,20 @@ function installChannelImports(){
   clear.onclick=()=>{pendingChannelRecords=[];renderChannelPreview()};renderChannelImportHistory();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installChannelImports);else installChannelImports();
+function getPlaybooks(){try{const saved=JSON.parse(localStorage.getItem(PLAYBOOKS_KEY));if(Array.isArray(saved)&&saved.length)return saved}catch{}const initial=createPlaybookFromIcp({stages:pipelineStages,icp:getOrbitIcp(),version:1});localStorage.setItem(PLAYBOOKS_KEY,JSON.stringify([initial]));localStorage.setItem(ACTIVE_PLAYBOOK_KEY,initial.id);return[initial]}
+function activePlaybook(){const items=getPlaybooks(),id=localStorage.getItem(ACTIVE_PLAYBOOK_KEY);return items.find(item=>item.id===id)||items[0]}
+function playbookCriterionLabel(field){return{owner:'Responsável definido',next:'Próxima ação combinada',nextDate:'Data confirmada',pain:'Dor principal validada',decisionMaker:'Decisor mapeado',successCriteria:'Critério de sucesso',budget:'Orçamento validado',objection:'Objeção principal tratada'}[field]||field}
+function renderPlaybookDealGuide(){
+  const id=$('#playbookDealSelect').value,target=$('#playbookDealGuide'),deal=getDeals().find(item=>item.id===id),playbook=activePlaybook();if(!deal){target.innerHTML=orbitEmptyState('Escolha uma oportunidade','O Orbit mostrará os critérios, perguntas e respostas adequados à etapa.','playbook-guide-empty');return}const evaluation=evaluateDealAgainstPlaybook(deal,playbook),guide=evaluation.guide;if(!guide){target.innerHTML=orbitEmptyState('Etapa ainda não mapeada','Gere uma nova versão para incluir as etapas atuais do funil.');return}
+  target.innerHTML=`<section class="playbook-readiness ${evaluation.ready?'ready':''}"><div><small>PRONTIDÃO PARA AVANÇAR</small><strong>${evaluation.percent}%</strong></div><span><i style="width:${evaluation.percent}%"></i></span><p>${evaluation.ready?'Todos os critérios desta etapa estão presentes.':`Complete: ${escapeHtml(evaluation.missing.join(', '))}.`}</p></section><section class="playbook-guide-block"><small>OBJETIVO DA ETAPA</small><h4>${escapeHtml(guide.goal)}</h4></section><section class="playbook-guide-block"><small>PERGUNTAS RECOMENDADAS</small><ol>${guide.questions.map(question=>`<li>${escapeHtml(question)}</li>`).join('')}</ol></section><section class="playbook-guide-block objections"><small>RESPOSTAS PARA OBJEÇÕES</small>${guide.objections.map((item,index)=>`<article><strong>${escapeHtml(item.trigger)}</strong><p>${escapeHtml(item.response)}</p><button type="button" data-copy-playbook="${index}">Copiar resposta</button></article>`).join('')}</section><button type="button" class="primary wide" id="applyPlaybookAction">Criar próxima ação: ${escapeHtml(guide.action)}</button>`;
+  target.querySelectorAll('[data-copy-playbook]').forEach(button=>button.onclick=async()=>{const text=guide.objections[Number(button.dataset.copyPlaybook)].response;try{await navigator.clipboard.writeText(text);button.textContent='Resposta copiada ✓'}catch{alert(text)}});$('#applyPlaybookAction').onclick=()=>applyPlaybookAction(deal,guide);
+}
+function applyPlaybookAction(deal,guide){const all=getDeals(),current=all.find(item=>item.id===deal.id);if(!current)return;const date=new Date();date.setDate(date.getDate()+2);const due=date.toISOString().slice(0,10);current.next=guide.action;current.nextDate=due;addEntityHistory(current,'Playbook aplicado',`${guide.phase} · ${guide.action}`);saveDeals(all);const activities=getActivities(),duplicate=activities.some(item=>!item.done&&item.client===current.client&&item.title===guide.action);if(!duplicate){activities.push({id:'activity-playbook-'+Date.now(),title:guide.action,type:'Tarefa',client:current.client,date:due,time:'09:00',note:`Orbit Playbooks · ${guide.phase}`,owner:current.owner||appState.currentUser?.name||'',done:false});saveActivities(activities)}renderPlaybooks();$('#playbookDealSelect').value=current.id;renderPlaybookDealGuide()}
+function renderPlaybooks(){
+  const items=getPlaybooks(),playbook=activePlaybook(),deals=dealsVisibleToCurrentUser(getDeals()).filter(deal=>deal.status!=='won'&&deal.status!=='lost'),adoption=playbookAdoption(deals,playbook),select=$('#playbookSelect'),dealSelect=$('#playbookDealSelect'),selectedDeal=dealSelect.value;select.innerHTML=items.map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · v${item.version}</option>`).join('');select.value=playbook.id;select.onchange=()=>{localStorage.setItem(ACTIVE_PLAYBOOK_KEY,select.value);renderPlaybooks()};$('#activePlaybookName').textContent=playbook.name;$('#activePlaybookDescription').textContent=`${playbook.segment} · ${playbook.stages.length} etapas guiadas`;$('#playbookAdoption').textContent=`${adoption.percent}%`;$('#playbookGuidedDeals').textContent=adoption.deals;$('#playbookReadyDeals').textContent=adoption.ready;$('#playbookVersion').textContent=`v${playbook.version}`;$('#playbookRoles').textContent=playbook.roles.length;$('#playbookStageCount').textContent=`${playbook.stages.length} etapas`;
+  $('#playbookStageList').innerHTML=playbook.stages.map((stage,index)=>`<article class="playbook-stage"><span>${String(index+1).padStart(2,'0')}</span><div class="playbook-stage-main"><small>${escapeHtml(stage.stageLabel)} · ${escapeHtml(stage.phase)}</small><h4>${escapeHtml(stage.goal)}</h4><div>${stage.criteria.map(field=>`<em>✓ ${escapeHtml(playbookCriterionLabel(field))}</em>`).join('')}</div></div><aside><small>PRÓXIMA AÇÃO PADRÃO</small><strong>${escapeHtml(stage.action)}</strong><p>${stage.questions.length} perguntas · ${stage.objections.length} objeções</p></aside></article>`).join('');dealSelect.innerHTML='<option value="">Selecione uma oportunidade</option>'+deals.map(deal=>`<option value="${escapeHtml(deal.id)}">${escapeHtml(deal.client)} · ${escapeHtml(deal.title)}</option>`).join('');dealSelect.value=deals.some(item=>item.id===selectedDeal)?selectedDeal:'';dealSelect.onchange=renderPlaybookDealGuide;renderPlaybookDealGuide();
+  $('#generatePlaybook').onclick=()=>{const currentItems=getPlaybooks(),version=Math.max(...currentItems.map(item=>Number(item.version||1)))+1,created=createPlaybookFromIcp({stages:pipelineStages,icp:getOrbitIcp(),version});currentItems.unshift(created);localStorage.setItem(PLAYBOOKS_KEY,JSON.stringify(currentItems.slice(0,10)));localStorage.setItem(ACTIVE_PLAYBOOK_KEY,created.id);renderPlaybooks()};
+}
 function contactDatesForClient(clientName){const normalized=String(clientName||'').trim().toLocaleLowerCase('pt-BR'),client=getClients().find(item=>item.name.trim().toLocaleLowerCase('pt-BR')===normalized),dates=[];(client?.interactions||[]).forEach(item=>{if(item.date)dates.push(item.date)});getActivities().filter(item=>item.client.trim().toLocaleLowerCase('pt-BR')===normalized&&item.done).forEach(item=>dates.push(item.completedAt||`${item.date}T${item.time||'12:00'}`));return dates.map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime())&&date<=new Date())}
 function daysWithoutContact(clientName,fallbackDate){const dates=contactDatesForClient(clientName);if(dates.length)return daysSince(new Date(Math.max(...dates.map(date=>date.getTime()))));return fallbackDate?daysSince(fallbackDate):null}
 function daysWithoutContactLabel(clientName,fallbackDate){const days=daysWithoutContact(clientName,fallbackDate);return days===null?'Sem contato registrado':days===0?'Contato hoje':`${days} ${days===1?'dia':'dias'} sem contato`}

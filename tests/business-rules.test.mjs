@@ -14,6 +14,7 @@ import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
 import {buildNextBestActions} from '../modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '../modules/channel-imports.js';
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
+import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -72,6 +73,28 @@ test('Nova Fase 6: fotografias mostram a evolução da previsão',()=>{
   assert.equal(change.amount,2500);
   assert.equal(change.percent,25);
   assert.equal(change.direction,'up');
+});
+
+test('Nova Fase 7: DNA comercial gera playbook alinhado ao segmento',()=>{
+  const playbook=createPlaybookFromIcp({stages:[{id:'lead',label:'Lead'},{id:'diagnosis',label:'Diagnóstico'},{id:'proposal',label:'Proposta'},{id:'won',label:'Ganhou'}],icp:{segments:'Clínicas, Consultórios',pains:'Falta de previsibilidade',objections:'Preço',proofs:'Case com 30% de ganho'}});
+  assert.equal(playbook.name,'Playbook Clínicas');
+  assert.equal(playbook.stages.length,3);
+  assert.match(playbook.stages[0].questions.at(-1),/falta de previsibilidade/i);
+  assert.match(playbook.stages[0].objections[0].response,/30% de ganho/);
+});
+
+test('Nova Fase 7: prontidão expõe exatamente o que falta para avançar',()=>{
+  const playbook=createPlaybookFromIcp({stages:[{id:'lead',label:'Lead'},{id:'diagnosis',label:'Diagnóstico'},{id:'proposal',label:'Proposta'},{id:'closing',label:'Fechamento'}]}),evaluation=evaluateDealAgainstPlaybook({stage:'diagnosis',owner:'Ana',next:'Apresentar',nextDate:'2026-09-01'},playbook);
+  assert.equal(evaluation.ready,false);
+  assert.ok(evaluation.missing.includes('dor principal'));
+  assert.ok(evaluation.missing.includes('decisor'));
+});
+
+test('Nova Fase 7: adesão mede a qualidade do processo sem contar negócios encerrados',()=>{
+  const playbook={stages:[{stageId:'lead',criteria:['owner','next'],questions:[],objections:[]}]},adoption=playbookAdoption([{stage:'lead',owner:'Ana',next:'Ligar'},{stage:'lead',owner:'Bia'},{stage:'lead',owner:'Caio',next:'Feito',status:'won'}],playbook);
+  assert.equal(adoption.deals,2);
+  assert.equal(adoption.ready,1);
+  assert.equal(adoption.percent,75);
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
