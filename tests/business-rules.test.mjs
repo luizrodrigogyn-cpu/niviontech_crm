@@ -13,6 +13,7 @@ import {analyzeBuyingCommittee} from '../modules/buying-committee.js';
 import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
 import {buildNextBestActions} from '../modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '../modules/channel-imports.js';
+import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -49,6 +50,28 @@ test('Fase 5: canal é vinculado ao cliente por e-mail ou domínio corporativo',
 test('Fase 5: importação não repete identificadores já salvos',()=>{
   const fresh=filterNewChannelRecords([{sourceUid:'a'},{sourceUid:'b'},{sourceUid:'b'},{sourceUid:'c'}],['a']);
   assert.deepEqual(fresh.map(item=>item.sourceUid),['b','c']);
+});
+
+test('Nova Fase 6: forecast separa compromisso, melhor caso e pipeline',()=>{
+  const stages=[{id:'new'},{id:'proposal'},{id:'closing'},{id:'won'}],deals=[{id:'1',stage:'closing',value:10000,next:'Assinar',nextDate:'2026-08-30',decisionMaker:'Ana'},{id:'2',stage:'proposal',value:5000,next:'Revisar proposta'},{id:'3',stage:'new',value:2000}];
+  const forecast=buildForecastGovernance(deals,stages);
+  assert.equal(forecast.totals.commit,10000);
+  assert.equal(forecast.totals.best,5000);
+  assert.equal(forecast.totals.pipeline,2000);
+  assert.equal(forecast.weighted,13850);
+});
+
+test('Nova Fase 6: compromisso incompleto é exposto como risco',()=>{
+  const forecast=buildForecastGovernance([{id:'1',stage:'closing',value:9000,forecastCategory:'commit'}],[{id:'closing'}]);
+  assert.equal(forecast.atRisk.length,1);
+  assert.deepEqual(forecast.records[0].missing,['próxima ação','data','decisor']);
+});
+
+test('Nova Fase 6: fotografias mostram a evolução da previsão',()=>{
+  const previous=createForecastSnapshot({weighted:10000,quality:60,totals:{},records:[1]},new Date('2026-08-20T12:00:00Z')),current=createForecastSnapshot({weighted:12500,quality:80,totals:{},records:[1,2]},new Date('2026-08-27T12:00:00Z')),change=compareForecastSnapshots(current,previous);
+  assert.equal(change.amount,2500);
+  assert.equal(change.percent,25);
+  assert.equal(change.direction,'up');
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{

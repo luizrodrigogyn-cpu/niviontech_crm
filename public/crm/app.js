@@ -10,6 +10,7 @@ import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
 import {analyzeCommercialConversation} from './modules/orbit-intelligence.js';
 import {buildManagementForecast} from './modules/management-intelligence.js';
+import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from './modules/forecast-governance.js';
 import {buildCadencePlan,cadenceProgress,cadenceTemplates} from './modules/cadences.js';
 import {buildCustomerSuccessPortfolio} from './modules/customer-success.js';
 import {analyzeBuyingCommittee,stakeholderRoles} from './modules/buying-committee.js';
@@ -31,6 +32,7 @@ const PROPOSALS_KEY='niviontech_proposals';
 const CADENCES_KEY='niviontech_cadences';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
 const CHANNEL_IMPORT_HISTORY_KEY='niviontech_channel_import_history';
+const FORECAST_SNAPSHOTS_KEY='niviontech_forecast_snapshots';
 const authParams=new URLSearchParams(location.search);
 const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
 
@@ -841,6 +843,15 @@ function renderReports(){
   renderForecastTimeline(deals);
   renderTeamPerformance(deals);
   renderDataQuality(deals);
+  renderForecastRoom(deals);
+}
+function getForecastSnapshots(){try{return JSON.parse(localStorage.getItem(FORECAST_SNAPSHOTS_KEY))||[]}catch{return[]}}
+function renderForecastRoom(deals=getDeals()){
+  const governance=buildForecastGovernance(deals,pipelineStages),set=(selector,value)=>{const element=$(selector);if(element)element.textContent=value};set('#forecastCommit',formatMoney(governance.totals.commit));set('#forecastBest',formatMoney(governance.totals.best));set('#forecastPipelineRaw',formatMoney(governance.totals.pipeline));set('#forecastQuality',`${governance.quality}%`);set('#forecastQualityHint',governance.quality>=80?'Previsão bem sustentada':governance.quality>=60?'Há dados para confirmar':'Complete os negócios');set('#forecastRiskBadge',`${governance.atRisk.length} ${governance.atRisk.length===1?'compromisso em risco':'compromissos em risco'}`);
+  const review=$('#forecastDealReview');if(review)review.innerHTML=governance.records.length?governance.records.map(item=>`<article class="forecast-review-row ${item.category}"><button type="button" data-forecast-deal="${escapeHtml(item.deal.id)}"><span>${escapeHtml(item.deal.client?.charAt(0)||'N')}</span><div><strong>${escapeHtml(item.deal.title)}</strong><small>${escapeHtml(item.deal.client)} · ${formatMoney(item.deal.value)}</small></div></button><label><small>CENÁRIO</small><select data-forecast-category="${escapeHtml(item.deal.id)}"><option value="commit">Comprometido</option><option value="best">Melhor caso</option><option value="pipeline">Pipeline</option><option value="omit">Fora da previsão</option></select></label><div class="forecast-quality"><span><i style="width:${item.quality}%"></i></span><small>${item.quality}% completo</small>${item.missing.length?`<em>Falta: ${escapeHtml(item.missing.join(', '))}</em>`:'<em class="ready">Pronto para revisão</em>'}</div></article>`).join(''):orbitEmptyState('Nenhum negócio para prever','Abra oportunidades no pipeline para construir o forecast.');
+  document.querySelectorAll('[data-forecast-category]').forEach(select=>{const record=governance.records.find(item=>item.deal.id===select.dataset.forecastCategory);select.value=record?.category||'pipeline';select.onchange=()=>{const all=getDeals(),deal=all.find(item=>item.id===select.dataset.forecastCategory);if(!deal)return;deal.forecastCategory=select.value;addEntityHistory(deal,'Cenário do forecast atualizado',select.selectedOptions[0].textContent);saveDeals(all);renderReports()}});document.querySelectorAll('[data-forecast-deal]').forEach(button=>button.onclick=()=>openDealDrawer(button.dataset.forecastDeal));
+  const snapshots=getForecastSnapshots(),history=$('#forecastSnapshotHistory');if(history)history.innerHTML=snapshots.length?snapshots.slice(0,8).map((item,index)=>{const comparison=compareForecastSnapshots(item,snapshots[index+1]);return`<article><span>${formatDate(item.date.slice(0,10))}</span><strong>${formatMoney(item.weighted)}</strong><small>${item.quality}% de qualidade · ${item.dealCount} negócios</small>${comparison.direction!=='new'?`<em class="${comparison.direction}">${comparison.amount>=0?'+':''}${comparison.percent}%</em>`:'<em>Base inicial</em>'}</article>`}).join(''):orbitEmptyState('Salve a primeira fotografia','Registre o forecast para acompanhar se a previsão está ficando mais forte.','forecast-empty');
+  const save=$('#saveForecastSnapshot');if(save)save.onclick=()=>{const items=getForecastSnapshots();items.unshift(createForecastSnapshot(governance));localStorage.setItem(FORECAST_SNAPSHOTS_KEY,JSON.stringify(items.slice(0,24)));renderForecastRoom(getDeals());save.textContent='Fotografia salva ✓';setTimeout(()=>{save.textContent='Salvar fotografia'},1800)};
 }
 function getOrbitAttentionItems(){
   if(!appState.currentUser)return[];
