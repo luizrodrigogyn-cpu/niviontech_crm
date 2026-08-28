@@ -4,6 +4,7 @@ import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
 import {clientRelationshipCompleteness,validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
+import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -98,6 +99,24 @@ test('Fase 2: mapa de relacionamento mostra avanço e lacunas do Cliente 360°',
   assert.equal(partial.percent,60);
   assert.deepEqual(partial.items.filter(item=>!item.done).map(item=>item.label),['Responsável pela conta','Objetivo do cliente']);
   assert.equal(complete.percent,100);
+});
+
+test('Fase 3: conversa vira diagnóstico, objeção e próximo passo',()=>{
+  const result=analyzeCommercialConversation('Temos muito retrabalho em planilha. Achei o preço caro, mas gostei da proposta. Enviar contrato na sexta-feira. O diretor aprova.',{client:{name:'Empresa Sol'}});
+  assert.ok(result.score>=60);
+  assert.equal(result.risk,'Saudável');
+  assert.ok(result.pains.includes('planilha'));
+  assert.ok(result.objectionTypes.includes('price'));
+  assert.match(result.next,/Enviar contrato/i);
+  assert.match(result.objectionGuidance,/impacto financeiro/i);
+  assert.match(result.followUp,/próximo passo/i);
+});
+
+test('Fase 3: diagnóstico aponta lacunas que o vendedor precisa descobrir',()=>{
+  const result=analyzeCommercialConversation('Cliente pediu uma apresentação.',{});
+  assert.ok(result.gaps.includes('Faixa de investimento'));
+  assert.ok(result.gaps.includes('Quem decide'));
+  assert.ok(result.score<50);
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{

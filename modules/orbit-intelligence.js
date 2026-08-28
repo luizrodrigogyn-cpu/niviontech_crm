@@ -1,0 +1,17 @@
+const termGroups={
+  objections:{price:['caro','preço','orcamento','orçamento','investimento'],timing:['sem tempo','agora não','depois','próximo mês'],trust:['não conheço','promessas','segurança','confiança'],authority:['sócio','diretoria','gestor','aprovação'],competition:['concorrente','já usamos','outra solução']},
+  pains:['planilha','desorganização','perda','atraso','retrabalho','falta de controle','sem visibilidade','dificuldade'],
+  buying:['interesse','gostei','proposta','contrato','começar','fechar','avançar','próximo passo']
+};
+function normalize(value=''){return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR')}
+function present(text,terms){return terms.filter(term=>text.includes(normalize(term)))}
+function firstSentence(text){return String(text).split(/[.!?\n]+/).map(item=>item.trim()).filter(Boolean).slice(0,3).join('. ').slice(0,520)}
+export function analyzeCommercialConversation(text,{deal={},client={},icp={}}={}){
+  const normalized=normalize(text),money=String(text).match(/R\$\s?[\d.]+(?:,\d{2})?/i)?.[0]||'',date=String(text).match(/\b(?:\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|segunda|terça|quarta|quinta|sexta)(?:-feira)?\b/i)?.[0]||'',next=String(text).match(/(?:retornar|ligar|enviar|agendar|marcar|reunião|apresentar|demonstrar)[^.\n]{0,100}/i)?.[0]||'';
+  const pains=present(normalized,termGroups.pains),buying=present(normalized,termGroups.buying),objectionTypes=Object.entries(termGroups.objections).filter(([,terms])=>present(normalized,terms).length).map(([type])=>type),objections=Object.values(termGroups.objections).flatMap(terms=>present(normalized,terms));
+  const evidence={pain:pains.length>0,budget:Boolean(money||deal.budget),authority:Boolean(deal.decisionMaker||client.decisionMaker||/decisor|diretor|sócio|gestor|aprova/i.test(text)),urgency:Boolean(date||deal.urgency),next:Boolean(next||deal.next),buying:buying.length>0};
+  const score=Math.round(Object.values(evidence).filter(Boolean).length/Object.keys(evidence).length*100),gaps=Object.entries({pain:'Impacto do problema',budget:'Faixa de investimento',authority:'Quem decide',urgency:'Prazo de decisão',next:'Próximo passo combinado'}).filter(([key])=>!evidence[key]).map(([,label])=>label);
+  const guidance={price:'Reforce o impacto financeiro do problema e compare com o custo de permanecer como está.',timing:'Converta o adiamento em uma data concreta e confirme o custo da espera.',trust:'Use prova, implantação segura e um próximo passo de baixo risco.',authority:'Mapeie quem aprova e combine como essa pessoa participará da próxima etapa.',competition:'Explore o que funciona hoje, o que falta e qual critério definirá a escolha.'};
+  const primaryType=objectionTypes[0]||'',risk=objectionTypes.length&&!buying.length?'Atenção':buying.length?'Saudável':score<50?'Informações insuficientes':'Em evolução',recommendedNext=next||deal.next||'Agendar próximo passo com data e responsável',clientName=client.name||deal.client||'cliente';
+  return{summary:firstSentence(text),money,date,next:recommendedNext,pains,buying,objections,objectionTypes,evidence,score,gaps,risk,objectionGuidance:guidance[primaryType]||'Confirme a preocupação principal antes de apresentar uma resposta.',followUp:`Olá! Obrigado pela conversa. Como próximo passo, combinamos: ${recommendedNext}. Vou manter o acompanhamento para avançarmos com clareza.`,reportTitle:`Diagnóstico comercial · ${clientName}`};
+}
