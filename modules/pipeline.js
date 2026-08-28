@@ -42,6 +42,20 @@ export function validateNegotiation(deal){
   if(!deal.next||!deal.nextDate)return{valid:false,message:'Toda negociação ativa precisa de próxima ação e data.'};
   return{valid:true,message:''};
 }
+export function stageChecklistForDeal(deal,stages=[]){
+  const commercial=commercialPipelineStages(stages),index=Math.max(0,commercial.findIndex(stage=>stage.id===deal.stage)),progress=commercial.length>1?index/(commercial.length-1):0;
+  const items=[
+    {key:'next',label:'Próximo passo definido',done:Boolean(String(deal.next||'').trim())},
+    {key:'nextDate',label:'Data combinada',done:Boolean(deal.nextDate)},
+    {key:'owner',label:'Responsável definido',done:Boolean(String(deal.owner||'').trim())}
+  ];
+  if(progress>=.25)items.push({key:'pain',label:'Dor principal identificada',done:Boolean(String(deal.pain||deal.orbitMemory?.pains?.[0]||'').trim())});
+  if(progress>=.45)items.push({key:'decisionMaker',label:'Decisor identificado',done:Boolean(String(deal.decisionMaker||deal.orbitMemory?.decisionMakers?.[0]||'').trim())});
+  if(progress>=.55)items.push({key:'budget',label:'Orçamento validado',done:Boolean(String(deal.budget||deal.orbitMemory?.budget||'').trim())});
+  if(progress>=.7)items.push({key:'objection',label:'Objeção principal tratada',done:Boolean(String(deal.objection||deal.orbitMemory?.objections?.[0]||'').trim())});
+  const done=items.filter(item=>item.done).length;
+  return{items,done,total:items.length,percent:Math.round(done/Math.max(1,items.length)*100),ready:done===items.length};
+}
 export function applyWonDealRules(deal,stage='won'){
   deal.status='won';
   deal.stage=stage;

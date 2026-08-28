@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,validateNegotiation} from '../modules/pipeline.js';
+import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,stageChecklistForDeal,validateNegotiation} from '../modules/pipeline.js';
 import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
 import {validateClientRegistration} from '../modules/clients.js';
@@ -21,6 +21,16 @@ test('RB-01: negociação ativa exige próxima ação e data',()=>{
   assert.equal(missingAction.message,'Toda negociação ativa precisa de próxima ação e data.');
   assert.equal(complete.valid,true);
   assert.equal(complete.message,'');
+});
+
+test('Fase 1: checklist cresce conforme a negociação avança',()=>{
+  const stages=[{id:'new'},{id:'qualified'},{id:'proposal'},{id:'closing'},{id:'won'}];
+  const early=stageChecklistForDeal({stage:'new',next:'Ligar',nextDate:'2026-08-28',owner:'Ana'},stages);
+  const closing=stageChecklistForDeal({stage:'closing',next:'Ligar',nextDate:'2026-08-28',owner:'Ana',pain:'Retrabalho',decisionMaker:'Carlos',budget:'R$ 20 mil',objection:'Prazo'},stages);
+  assert.equal(early.total,3);
+  assert.equal(early.ready,true);
+  assert.equal(closing.total,7);
+  assert.equal(closing.percent,100);
 });
 
 test('RB-04: venda ganha não significa pagamento recebido',()=>{
