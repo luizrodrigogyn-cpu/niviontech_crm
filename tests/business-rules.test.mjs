@@ -16,6 +16,7 @@ import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '.
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
 import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
 import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
+import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit} from '../modules/growth-os.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -119,6 +120,36 @@ test('Fase 8: plano pode ser compartilhado em texto claro',()=>{
   assert.match(text,/PLANO DE FECHAMENTO · Empresa Sol/);
   assert.match(text,/Nossa equipe/);
   assert.match(text,/Cliente/);
+});
+
+test('Fase 9: Deal Score cresce com evidências reais de compra',()=>{
+  const stages=[{id:'lead'},{id:'diagnosis'},{id:'closing'}],weak=buildDealScorecard({stage:'lead',value:10000},stages,'2026-08-27'),strong=buildDealScorecard({stage:'closing',value:10000,next:'Assinar',nextDate:'2026-08-30',pain:'Retrabalho',decisionMaker:'Ana',budget:'R$ 10 mil',successCriteria:'Prazo',orbitMemory:{commitments:['Enviar contrato']}},stages,'2026-08-27');
+  assert.ok(strong.score>weak.score);
+  assert.equal(strong.temperature,'hot');
+  assert.ok(strong.signals.includes('Cliente assumiu compromisso'));
+});
+
+test('Fase 10: automações geram ações sem duplicar tarefas existentes',()=>{
+  const input={deals:[{id:'d1',client:'Empresa A',stage:'lead',value:50000}],activities:[{id:'a1',title:'Ligar',client:'Empresa A',date:'2026-08-20',done:false}],enabledRules:['overdue-followup','high-value-risk'],stages:[{id:'lead'}],today:'2026-08-27'};
+  const first=runAutomationRules(input);
+  const second=runAutomationRules({...input,activities:[...input.activities,...first.map((item,index)=>({...item,id:`new-${index}`,done:false}))]});
+  assert.equal(first.length,2);
+  assert.equal(second.length,0);
+});
+
+test('Fase 11: briefing de coaching combina resultado, execução e foco',()=>{
+  const brief=buildCoachingBrief({name:'Ana'},[{owner:'Ana',status:'open',value:12000},{owner:'Ana',status:'won',value:5000,wonAt:'2026-08-20'}],[{owner:'Ana',date:'2026-08-20',done:true,completedAt:'2026-08-20T12:00:00Z'}],'2026-08');
+  assert.equal(brief.pipeline,12000);
+  assert.equal(brief.sold,5000);
+  assert.equal(brief.execution,100);
+  assert.ok(brief.agenda.length>=4);
+});
+
+test('Fase 12: cockpit executivo transforma risco em prioridades',()=>{
+  const cockpit=buildRevenueCockpit([{id:'d1',title:'Contrato anual',client:'Empresa A',stage:'closing',value:40000,nextDate:'2026-08-20',orbitMemory:{risk:'Atenção'}},{id:'d2',title:'Piloto',client:'Empresa B',stage:'lead',value:5000,next:'Reunião',nextDate:'2026-08-30'}],[{title:'Responder cliente',client:'Empresa A',date:'2026-08-20',done:false}],[{id:'lead'},{id:'closing'}],'2026-08-27');
+  assert.equal(cockpit.pipeline,45000);
+  assert.ok(cockpit.atRiskValue>=40000);
+  assert.ok(cockpit.priorities.length>=2);
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
