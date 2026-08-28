@@ -9,6 +9,7 @@ import {buildManagementForecast} from '../modules/management-intelligence.js';
 import {buildCadencePlan,cadenceProgress} from '../modules/cadences.js';
 import {buildCustomerSuccessPortfolio} from '../modules/customer-success.js';
 import {analyzeBuyingCommittee} from '../modules/buying-committee.js';
+import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -131,6 +132,27 @@ test('Nova Fase 1: conversa extrai decisor, concorrente, compromisso e evidênci
   assert.ok(result.evidenceQuotes.some(item=>item.label==='Dor'));
   assert.ok(result.suggestedUpdates.some(item=>item.field==='Decisor'));
   assert.ok(result.suggestedUpdates.some(item=>item.field==='Concorrente'));
+});
+
+test('Nova Fase 2: preparação combina memória, comitê e pendências da conta',()=>{
+  const deal={id:'d1',client:'Empresa Sol',title:'Implantação',value:18500,stage:'proposal',next:'Apresentar proposta',nextDate:'2026-08-30',pain:'Retrabalho',objection:'preço',budget:'R$ 18.500',orbitMemory:{summary:'Cliente quer reduzir retrabalho.',commitments:['Enviar estudo de implantação']}};
+  const client={name:'Empresa Sol',goal:'Ganhar previsibilidade',decisionMaker:'Marina Alves',stakeholders:[{name:'Marina Alves',role:'decision',influence:'high',sentiment:'neutral'},{name:'Paulo',role:'champion',influence:'medium',sentiment:'support'}]};
+  const activities=[{client:'Empresa Sol',title:'Enviar proposta revisada',date:'2026-08-29',time:'10:00',done:false},{client:'Outra empresa',title:'Ignorar',date:'2026-08-28',done:false}];
+  const result=buildMeetingPreparation({deal,client,activities,meetingType:'proposal',stageLabel:'Proposta'});
+  assert.equal(result.stageLabel,'Proposta');
+  assert.equal(result.people.length,2);
+  assert.equal(result.pending.length,1);
+  assert.match(result.objective,/investimento/i);
+  assert.match(result.desiredCommitment,/aprovação/i);
+  assert.ok(result.questions.some(item=>/preocupação com preço/i.test(item)));
+  assert.ok(result.readiness>=80);
+});
+
+test('Nova Fase 2: preparação expõe lacunas antes da reunião',()=>{
+  const result=buildMeetingPreparation({deal:{client:'Empresa Nova'},client:{name:'Empresa Nova'},meetingType:'diagnosis'});
+  assert.ok(result.risks.some(item=>/Decisor/i.test(item)));
+  assert.ok(result.questions.some(item=>/quem participa/i.test(item)));
+  assert.ok(result.readiness<60);
 });
 
 test('Fase 4: previsão considera etapa, qualificação e risco',()=>{
