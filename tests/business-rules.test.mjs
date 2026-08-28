@@ -7,6 +7,7 @@ import {analyzeConversationText,createHandoffSummary} from '../modules/organize.
 import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
 import {buildManagementForecast} from '../modules/management-intelligence.js';
 import {buildCadencePlan,cadenceProgress} from '../modules/cadences.js';
+import {buildCustomerSuccessPortfolio} from '../modules/customer-success.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -154,6 +155,22 @@ test('Fase 5: progresso identifica próxima ação e conclusão da cadência',()
   assert.equal(progress.next.title,'Enviar proposta');
   assert.equal(progress.complete,false);
   assert.equal(cadenceProgress(cadence,activities.map(item=>({...item,done:true}))).complete,true);
+});
+
+test('Fase 6: carteira identifica risco de retenção e receita protegida',()=>{
+  const clients=[{id:'c1',name:'Empresa A',status:'Cliente',renewalDate:'2026-09-10',orbitMemory:{risk:'Atenção'}},{id:'c2',name:'Empresa B',status:'Cliente'}],deals=[{client:'Empresa A',status:'won',value:10000,paymentStatus:'pending'},{client:'Empresa B',status:'won',value:5000,paymentStatus:'received'}],activities=[{client:'Empresa B',title:'Revisar resultado',date:'2026-09-01',time:'09:00',done:false}];
+  const result=buildCustomerSuccessPortfolio(clients,deals,activities,new Date('2026-08-27T12:00:00'));
+  assert.equal(result.totalRevenue,15000);
+  assert.equal(result.atRisk,1);
+  assert.equal(result.renewals,1);
+  assert.equal(result.accounts.find(item=>item.client.id==='c1').tone,'risk');
+});
+
+test('Fase 6: cliente saudável e recebido gera sinal de expansão',()=>{
+  const result=buildCustomerSuccessPortfolio([{id:'c1',name:'Empresa A',status:'Cliente'}],[{client:'Empresa A',status:'won',value:10000,paymentStatus:'received'}],[{client:'Empresa A',title:'Revisão',date:'2026-09-01',time:'09:00',done:false}],new Date('2026-08-27T12:00:00'));
+  assert.equal(result.expansion,1);
+  assert.equal(result.accounts[0].score,100);
+  assert.equal(result.accounts[0].expansion,true);
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{
