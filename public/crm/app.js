@@ -9,6 +9,7 @@ import {reportsDomain} from './modules/reports.js';
 import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
 import {analyzeCommercialConversation} from './modules/orbit-intelligence.js';
+import {buildManagementForecast} from './modules/management-intelligence.js';
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js?v=20260826-3';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
@@ -705,6 +706,11 @@ function renderReports(){
   setText('#reportReceived',formatMoney(receivedValue));
   setText('#reportReceivedRate',receiptRate+'% do valor vendido');
   setText('#reportConversion',conversion+'%');
+  const teamGoal=Number(getGoals()[goalPeriodNow()]?.team?.sold||0),management=buildManagementForecast(deals,pipelineStages,teamGoal);
+  setText('#managementWeighted',formatMoney(management.weighted));setText('#managementRisk',formatMoney(management.riskValue));setText('#managementConcentration',management.concentration+'%');setText('#managementCoverageBadge',management.coverage===null?'Configure uma meta de equipe':management.coverage+'% de cobertura da meta');
+  $('#managementCoverageBadge')?.classList.toggle('attention',management.coverage!==null&&management.coverage<80);$('#managementRisk')?.closest('article')?.classList.toggle('attention',management.riskValue>0);$('#managementConcentration')?.closest('article')?.classList.toggle('attention',management.concentration>45);
+  const recommendationBox=$('#managementRecommendations');if(recommendationBox)recommendationBox.innerHTML=management.recommendations.map((text,index)=>`<article><span>${index+1}</span><p>${escapeHtml(text)}</p></article>`).join('');
+  const topDealsBox=$('#managementTopDeals');if(topDealsBox)topDealsBox.innerHTML=management.topDeals.length?management.topDeals.map(item=>`<button type="button" data-management-deal="${escapeHtml(item.deal.id)}"><div><strong>${escapeHtml(item.deal.title)}</strong><small>${escapeHtml(item.deal.client)} · ${Math.round(item.probability*100)}% de probabilidade</small></div><span>${formatMoney(item.weighted)}</span></button>`).join(''):orbitEmptyState('Previsão aguardando dados','Cadastre oportunidades para o Orbit calcular a previsão.');document.querySelectorAll('[data-management-deal]').forEach(button=>button.onclick=()=>openDealDrawer(button.dataset.managementDeal));
   setMetricSemantic('#reportWon','success');
   setMetricSemantic('#reportReceived','success');
   const stageData=pipelineStages.map(stage=>{
@@ -716,7 +722,7 @@ function renderReports(){
   if(chart)chart.innerHTML=deals.length?stageData.map(item=>'<div class="stage-row"><div class="stage-row-label"><strong>'+item.stage.label+'</strong><span>'+item.count+' · '+formatMoney(item.value)+'</span></div><div class="stage-bar"><span style="width:'+Math.max(item.count?8:0,Math.round((item.value||item.count)/maxStage*100))+'%"></span></div></div>').join(''):orbitEmptyState('Seu primeiro retrato comercial','O Orbit montará este gráfico assim que uma oportunidade entrar no funil.');
   const pendingActivities=getActivities().filter(activity=>!activity.done);
   const overdue=pendingActivities.filter(activity=>activity.date&&activity.date<todayISO()).length;
-  const withoutNext=open.filter(deal=>!deal.nextAction||!deal.nextActionDate).length;
+  const withoutNext=open.filter(deal=>!deal.next||!deal.nextDate).length;
   const stalled=open.filter(deal=>daysSince(deal.movedAt)>7).length;
   const pendingValue=Math.max(0,wonValue-receivedValue);
   const insights=[
@@ -738,7 +744,7 @@ function getOrbitAttentionItems(){
   const open=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost');
   const items=[];
   getActivities().filter(activity=>!activity.done&&activity.date&&activity.date<todayISO()).forEach(activity=>items.push({priority:1,type:'Atividade atrasada',title:activity.title||'Atividade pendente',detail:(activity.client||'Sem cliente')+' · prevista para '+activity.date,target:'activities'}));
-  open.filter(deal=>!deal.nextAction||!deal.nextActionDate).forEach(deal=>items.push({priority:2,type:'Sem próximo passo',title:deal.title||deal.name||'Oportunidade',detail:'Defina uma ação e uma data para manter a negociação viva.',target:'pipeline'}));
+  open.filter(deal=>!deal.next||!deal.nextDate).forEach(deal=>items.push({priority:2,type:'Sem próximo passo',title:deal.title||deal.name||'Oportunidade',detail:'Defina uma ação e uma data para manter a negociação viva.',target:'pipeline'}));
   open.filter(deal=>daysSince(deal.movedAt)>7).forEach(deal=>items.push({priority:3,type:'Negociação parada',title:deal.title||deal.name||'Oportunidade',detail:'Sem avanço há '+daysSince(deal.movedAt)+' dias.',target:'pipeline'}));
   deals.filter(deal=>deal.status==='won'&&deal.paymentStatus!=='received').forEach(deal=>items.push({priority:4,type:'Recebimento pendente',title:deal.title||deal.name||'Venda concluída',detail:formatMoney(Math.max(0,(Number(deal.value)||0)-(Number(deal.receivedAmount)||0)))+' ainda não recebido.',target:'receipts'}));
   return items.sort((a,b)=>a.priority-b.priority).slice(0,20);

@@ -5,6 +5,7 @@ import {applyReceiptRules} from '../modules/receipts.js';
 import {clientRelationshipCompleteness,validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
+import {buildManagementForecast} from '../modules/management-intelligence.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -117,6 +118,24 @@ test('Fase 3: diagnóstico aponta lacunas que o vendedor precisa descobrir',()=>
   assert.ok(result.gaps.includes('Faixa de investimento'));
   assert.ok(result.gaps.includes('Quem decide'));
   assert.ok(result.score<50);
+});
+
+test('Fase 4: previsão considera etapa, qualificação e risco',()=>{
+  const stages=[{id:'new'},{id:'proposal'},{id:'closing'},{id:'won'},{id:'lost'}];
+  const healthy={id:'1',client:'A',stage:'closing',value:10000,next:'Enviar contrato',nextDate:'2026-08-30',orbitMemory:{qualificationScore:90,risk:'Saudável'}};
+  const risky={id:'2',client:'B',stage:'closing',value:10000,orbitMemory:{qualificationScore:90,risk:'Atenção'}};
+  const result=buildManagementForecast([healthy,risky],stages,20000);
+  assert.equal(result.topDeals[0].deal.id,'1');
+  assert.ok(result.topDeals[0].weighted>result.topDeals[1].weighted);
+  assert.equal(result.riskValue,10000);
+  assert.ok(result.coverage>0);
+});
+
+test('Fase 4: inteligência alerta concentração excessiva da carteira',()=>{
+  const stages=[{id:'new'},{id:'closing'}],deals=[{id:'1',client:'Empresa A',stage:'new',value:9000,next:'Ligar',nextDate:'2026-08-30'},{id:'2',client:'Empresa B',stage:'new',value:1000,next:'Ligar',nextDate:'2026-08-30'}];
+  const result=buildManagementForecast(deals,stages,0);
+  assert.equal(result.concentration,90);
+  assert.ok(result.recommendations.some(item=>item.includes('concentrado')));
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{
