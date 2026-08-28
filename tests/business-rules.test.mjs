@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,stageChecklistForDeal,validateNegotiation} from '../modules/pipeline.js';
 import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
+import {calculateProposalTotals,markProposalViewed,acceptProposal} from '../modules/proposals.js';
 import {clientRelationshipCompleteness,validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
@@ -171,6 +172,33 @@ test('Nova Fase 3: proposta sem retorno gera mensagem e orientação de etapa',(
   assert.equal(result[0].type,'proposal');
   assert.match(result[0].message,/revisar a proposta/i);
   assert.match(result[0].stageSuggestion,/negociação/i);
+});
+
+test('Nova Fase 4: proposta calcula itens, desconto e valor final',()=>{
+  const result=calculateProposalTotals([{description:'Implantação',quantity:1,unitPrice:10000},{description:'Licenças',quantity:5,unitPrice:1000}],10);
+  assert.equal(result.subtotal,15000);
+  assert.equal(result.discountValue,1500);
+  assert.equal(result.total,13500);
+  assert.equal(result.items.length,2);
+});
+
+test('Nova Fase 4: visualização e aceite preservam rastreabilidade da versão',()=>{
+  const proposal={id:'p1',status:'sent',version:2};
+  markProposalViewed(proposal,new Date('2026-08-27T14:00:00Z'));
+  assert.equal(proposal.status,'viewed');
+  assert.equal(proposal.viewCount,1);
+  const result=acceptProposal(proposal,{name:'Marina Alves',email:'marina@empresa.com',now:new Date('2026-08-27T15:00:00Z')});
+  assert.equal(result.valid,true);
+  assert.equal(proposal.status,'approved');
+  assert.equal(proposal.acceptance.version,2);
+  assert.equal(proposal.acceptance.name,'Marina Alves');
+});
+
+test('Nova Fase 4: aceite sem responsável é bloqueado',()=>{
+  const proposal={status:'viewed',version:1};
+  const result=acceptProposal(proposal,{name:'   '});
+  assert.equal(result.valid,false);
+  assert.equal(proposal.status,'viewed');
 });
 
 test('Fase 4: previsão considera etapa, qualificação e risco',()=>{
