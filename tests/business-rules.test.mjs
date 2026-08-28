@@ -15,6 +15,7 @@ import {buildNextBestActions} from '../modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '../modules/channel-imports.js';
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
 import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
+import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -95,6 +96,29 @@ test('Nova Fase 7: adesão mede a qualidade do processo sem contar negócios enc
   assert.equal(adoption.deals,2);
   assert.equal(adoption.ready,1);
   assert.equal(adoption.percent,75);
+});
+
+test('Fase 8: plano de fechamento organiza compromissos das duas partes',()=>{
+  const plan=createMutualActionPlan({deal:{id:'deal-1',title:'Implantação',client:'Empresa Sol'},client:{id:'client-1'},startDate:'2026-08-27'});
+  assert.equal(plan.milestones.length,6);
+  assert.equal(plan.milestones[0].dueDate,'2026-08-29');
+  assert.equal(plan.targetDate,'2026-09-13');
+  assert.ok(plan.milestones.some(item=>item.owner==='client'));
+});
+
+test('Fase 8: progresso diferencia conclusão e atraso',()=>{
+  const plan=createMutualActionPlan({deal:{id:'deal-1',title:'Implantação',client:'Empresa Sol'},startDate:'2026-08-01'});toggleMutualMilestone(plan,plan.milestones[0].id,new Date('2026-08-02T12:00:00Z'));const progress=mutualPlanProgress(plan,'2026-08-10');
+  assert.equal(progress.done,1);
+  assert.equal(progress.percent,17);
+  assert.equal(progress.overdue,2);
+  assert.equal(progress.next.title,'Confirmar decisores e processo de aprovação');
+});
+
+test('Fase 8: plano pode ser compartilhado em texto claro',()=>{
+  const plan=createMutualActionPlan({deal:{id:'deal-1',title:'Implantação',client:'Empresa Sol'},startDate:'2026-08-27'}),text=mutualPlanPlainText(plan);
+  assert.match(text,/PLANO DE FECHAMENTO · Empresa Sol/);
+  assert.match(text,/Nossa equipe/);
+  assert.match(text,/Cliente/);
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
