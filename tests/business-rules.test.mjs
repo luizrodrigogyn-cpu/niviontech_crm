@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,stageChecklistForDeal,validateNegotiation} from '../modules/pipeline.js';
 import {todayISO} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
-import {validateClientRegistration} from '../modules/clients.js';
+import {clientRelationshipCompleteness,validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
@@ -89,6 +89,15 @@ test('RB-03: telefone e e-mail também identificam cliente existente',()=>{
   assert.equal(result.valid,false);
   assert.ok(result.duplicate.signals.includes('mesmo telefone'));
   assert.ok(result.duplicate.signals.includes('mesmo e-mail'));
+});
+
+test('Fase 2: mapa de relacionamento mostra avanço e lacunas do Cliente 360°',()=>{
+  const partial=clientRelationshipCompleteness({mainContact:'Paula, Compras',decisionMaker:'Carlos',icpFit:'high'});
+  const complete=clientRelationshipCompleteness({mainContact:'Paula',decisionMaker:'Carlos',accountOwner:'Ana',icpFit:'high',goal:'Reduzir retrabalho'});
+  assert.equal(partial.done,3);
+  assert.equal(partial.percent,60);
+  assert.deepEqual(partial.items.filter(item=>!item.done).map(item=>item.label),['Responsável pela conta','Objetivo do cliente']);
+  assert.equal(complete.percent,100);
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{
