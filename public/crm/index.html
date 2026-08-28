@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260827-2">
+  <link rel="stylesheet" href="styles.css?v=20260828-1">
   <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
   <style>#appScreen h1{font-family:Manrope,sans-serif!important}</style>
   <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
@@ -60,16 +60,28 @@
   <main id="appScreen" class="app hidden">
     <aside class="sidebar">
       <a class="logo brand-logo-compact tenant-brand" href="#" aria-label="Identidade da empresa"><span class="brand-symbol"><img id="sidebarCompanyLogo" src="assets/niviontech-symbol.png" alt=""></span><div class="tenant-brand-copy"><strong id="sidebarCompanyName">NivionTech</strong><b>NivionTech CRM</b></div></a>
-      <p class="nav-title">VISÃO GERAL</p>
-      <nav><button class="active" data-view="today"><i>⌂</i>Dashboard</button></nav>
-      <p class="nav-title">COMERCIAL</p>
-      <nav><button data-view="pipeline"><i>◇</i>Pipeline</button><button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button><button data-view="closingPlans"><i>✓</i>Planos de fechamento</button><button data-view="channels"><i>⇄</i>Canais</button><button data-view="cadences"><i>↻</i>Cadências</button><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button></nav>
-      <p class="nav-title">RELACIONAMENTO</p>
-      <nav><button data-view="clients"><i>▣</i>Clientes</button><button data-view="success"><i>◎</i>Sucesso e expansão</button></nav>
-      <p class="nav-title">INTELIGÊNCIA</p>
-      <nav><button data-view="reports"><i>⌁</i>Relatórios</button><button data-view="growthOs"><i>↑</i>Growth OS</button><button data-view="orbitCoach"><i>✦</i>Orbit IA</button><button data-view="playbooks"><i>▷</i>Playbooks</button><button data-view="organize"><i>✦</i>Cole e organize</button><button id="rankingNav" data-view="ranking" hidden><i>⌁</i>Ranking</button></nav>
-      <p class="nav-title manager-only">ADMINISTRAÇÃO</p>
-      <nav><button class="manager-only" data-view="team"><i>◎</i>Equipe e acessos</button><button class="admin-only" data-view="templates"><i>▥</i>Modelos de funil</button></nav>
+      <p class="nav-title">SEU COMERCIAL</p>
+      <nav class="guided-nav" aria-label="Navegação principal">
+        <button class="active guided-nav-main" data-view="today"><i>⌂</i><span><strong>Meu dia</strong><small>Prioridades e execução</small></span></button>
+        <details class="guided-nav-group" data-nav-group="deals">
+          <summary><i>◇</i><span><strong>Negociações</strong><small>Do contato ao recebimento</small></span><b>⌄</b></summary>
+          <div class="guided-nav-children">
+            <button data-view="pipeline">Pipeline</button><button data-view="activities">Atividades <em id="activityBadge">3</em></button><button data-view="proposals">Propostas</button><button data-view="closingPlans">Planos de fechamento</button><button data-view="cadences">Cadências</button><button data-view="channels">Importar interações</button><button data-view="receipts">Recebimentos</button>
+          </div>
+        </details>
+        <details class="guided-nav-group" data-nav-group="clients">
+          <summary><i>▣</i><span><strong>Clientes</strong><small>Relacionamento e expansão</small></span><b>⌄</b></summary>
+          <div class="guided-nav-children"><button data-view="clients">Visão de clientes</button><button data-view="success">Sucesso e expansão</button></div>
+        </details>
+        <details class="guided-nav-group" data-nav-group="orbit">
+          <summary><i>✦</i><span><strong>Orbit IA</strong><small>Preparar, analisar e avançar</small></span><b>⌄</b></summary>
+          <div class="guided-nav-children"><button data-view="orbitCoach">Central Orbit IA</button><button data-view="organize">Analisar conversa</button><button data-view="playbooks">Método de vendas</button></div>
+        </details>
+        <details class="guided-nav-group manager-only" data-nav-group="management">
+          <summary><i>⌁</i><span><strong>Gestão</strong><small>Previsão, equipe e resultados</small></span><b>⌄</b></summary>
+          <div class="guided-nav-children"><button data-view="reports">Visão executiva</button><button data-view="growthOs">Inteligência de vendas</button><button id="rankingNav" data-view="ranking" hidden>Metas e ranking</button><button class="manager-only" data-view="team">Equipe e acessos</button><button class="admin-only" data-view="templates">Modelos de funil</button></div>
+        </details>
+      </nav>
       <div class="sidebar-footer">
         <button class="settings" data-view="settings"><i>⚙</i>Configurações</button>
         <div class="profile"><span id="profileInitial">A</span><div><strong id="profileName">Administrador</strong><small id="profileRole">Proprietário/Admin</small></div></div>
@@ -364,6 +376,12 @@
     <aside class="drawer-panel deal-drawer-panel">
       <header class="drawer-header"><div><p class="overline">OPORTUNIDADE 360°</p><h2 id="drawerDealTitle">Oportunidade</h2><p id="drawerDealClient">Cliente</p></div><button data-close-drawer>×</button></header>
       <div class="deal-stage-track" id="dealStageTrack"></div>
+      <section class="deal-narrative" id="dealNarrative">
+        <header><span class="deal-narrative-orbit">O</span><div><small>ORBIT · LEITURA DA NEGOCIAÇÃO</small><h3 id="dealNarrativeTitle">O que está acontecendo</h3></div><span id="dealNarrativeTone" class="deal-narrative-tone">Analisando</span></header>
+        <p id="dealNarrativeSituation"></p>
+        <div class="deal-narrative-grid"><article><small>EVIDÊNCIAS</small><p id="dealNarrativeEvidence"></p></article><article><small>IMPACTO</small><p id="dealNarrativeImpact"></p></article></div>
+        <footer><div><small>MELHOR PRÓXIMA AÇÃO</small><strong id="dealNarrativeAction"></strong></div><button type="button" id="executeDealNarrative">Executar agora →</button></footer>
+      </section>
       <section class="deal-detail-section">
         <div class="detail-section-title"><h3>Dados comerciais</h3><span id="drawerDealStatus" class="deal-status">Em andamento</span></div>
         <div class="detail-form-grid"><label>Valor estimado<input id="drawerDealValue" type="number" min="0" step="0.01"></label><label>Responsável<input id="drawerDealOwner"></label><label>Origem do lead<select id="drawerDealLeadSource"><option value="">Não informada</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Prospecção ativa</option><option>Anúncio</option><option>Evento</option><option>Parceiro</option><option>Cliente recorrente</option><option>Outro</option></select></label><label>Detalhe da origem<input id="drawerDealSourceDetail" placeholder="Campanha, parceiro ou indicação"></label><label>Papel atual<select id="drawerDealRole"><option>Proprietário/Admin</option><option>Colaborador comercial</option><option>Gestor Comercial</option><option>SDR</option><option>Executivo de Contas</option><option>Pós-venda</option></select></label><label>Motivo da transferência<input id="drawerTransferReason" placeholder="Opcional"></label><label class="full-field">Próximo passo obrigatório<input id="drawerDealNext" placeholder="Ação concreta combinada com o cliente"></label><label>Data da próxima ação<input id="drawerDealNextDate" type="date"></label><label>Urgência<select id="drawerDealUrgency"><option value="">Não confirmada</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select></label><label>Dor principal<input id="drawerDealPain" placeholder="Problema que precisa ser resolvido"></label><label>Decisor<input id="drawerDealDecisionMaker" placeholder="Quem aprova a compra"></label><label>Orçamento validado<input id="drawerDealBudget" placeholder="Faixa ou valor confirmado"></label><label>Objeção principal<input id="drawerDealObjection" placeholder="O que impede o avanço"></label><label>Concorrente ou alternativa<input id="drawerDealCompetitor" placeholder="Solução considerada pelo cliente"></label><label class="full-field">Critério de sucesso<input id="drawerDealSuccessCriteria" placeholder="Como o cliente medirá o resultado"></label></div>
@@ -392,6 +410,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-<script type="module" src="app.js?v=20260827-9"></script>
+<script type="module" src="app.js?v=20260828-1"></script>
 </body>
 </html>
