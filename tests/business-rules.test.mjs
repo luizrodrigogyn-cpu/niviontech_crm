@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import {applyLostDealRules,applyWonDealRules,commercialPipelineStages,findStaleDeals,stageChecklistForDeal,validateNegotiation} from '../modules/pipeline.js';
-import {todayISO} from '../modules/activities.js';
+import {todayISO,shiftActivity,completeActivityWithNext} from '../modules/activities.js';
 import {applyReceiptRules} from '../modules/receipts.js';
-import {calculateProposalTotals,markProposalViewed,acceptProposal} from '../modules/proposals.js';
+import {calculateProposalTotals,markProposalViewed,acceptProposal,proposalFamily,createProposalRevision,compareProposalVersions,proposalFollowUp} from '../modules/proposals.js';
+import {dealRoomPayload,normalizeAccessCode} from '../modules/deal-room.js';
 import {clientRelationshipCompleteness,validateClientRegistration} from '../modules/clients.js';
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
@@ -206,6 +207,12 @@ test('Fase 20: comando diário resume mudanças e filas urgentes',()=>{
   assert.equal(command.views.find(item=>item.id==='overdue').count,1);
   assert.equal(command.views.find(item=>item.id==='without-next').count,1);
 });
+
+test('Fase 21: atividade pode ser adiada sem perder o compromisso',()=>{const item={date:'2026-08-20',done:true,completedAt:'x'};shiftActivity(item,3,new Date('2026-08-27T12:00:00Z'));assert.equal(item.date,'2026-08-30');assert.equal(item.done,false);assert.equal(item.completedAt,null)});
+test('Fase 21: concluir e criar próximo passo mantém a continuidade',()=>{const source={id:'a1',title:'Apresentar',client:'Empresa A',time:'10:00',done:false},result=completeActivityWithNext(source,{title:'Confirmar decisão',date:'2026-08-30'},new Date('2026-08-27T12:00:00Z'));assert.equal(source.done,true);assert.equal(result.nextActivity.client,'Empresa A');assert.equal(result.nextActivity.title,'Confirmar decisão')});
+test('Fase 22: revisão preserva família e permite comparação',()=>{const first={id:'p1',version:1,value:1000,discount:0,status:'sent'},second=createProposalRevision(first,new Date('2026-08-27T12:00:00Z'));second.value=900;assert.equal(second.familyId,'p1');assert.equal(second.version,2);assert.equal(proposalFamily([second,first],second).length,2);assert.equal(compareProposalVersions(first,second)[0].field,'value')});
+test('Fase 22: follow-up de proposta nasce com contexto',()=>{const activity=proposalFollowUp({title:'Implantação',client:'Empresa A',version:2,viewCount:1},2,new Date('2026-08-27T12:00:00Z'));assert.equal(activity.date,'2026-08-29');assert.match(activity.note,/já visualizou/)});
+test('Fase 23: sala compartilha apenas o recorte comercial necessário',()=>{const payload=dealRoomPayload({proposal:{id:'p1',title:'Plano',client:'Empresa A',value:1000,items:[]},deal:{id:'d1',title:'Plano',next:'Aprovar'},company:{name:'Nivion'}});assert.equal(payload.company.name,'Nivion');assert.equal(payload.deal.next,'Aprovar');assert.equal('history' in payload.deal,false);assert.equal(normalizeAccessCode('12a34-56'),'123456')});
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
   const missingAction=validateNegotiation({next:'',nextDate:'2026-08-26'});

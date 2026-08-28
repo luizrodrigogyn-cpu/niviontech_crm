@@ -33,3 +33,7 @@ export const crmOrgSnapshots=sqliteTable('crm_org_snapshots',{
 export const crmLoginAudit=sqliteTable('crm_login_audit',{
   id:text('id').primaryKey(),userId:text('user_id').notNull(),orgId:text('org_id').notNull(),sessionFingerprint:text('session_fingerprint').notNull(),activeSessions:integer('active_sessions').notNull(),createdAt:text('created_at').notNull(),
 });
+
+export const crmDealRooms=sqliteTable('crm_deal_rooms',{
+  token:text('token').primaryKey(),orgId:text('org_id').notNull(),payload:text('payload').notNull(),accessHash:text('access_hash').notNull(),expiresAt:text('expires_at').notNull(),revokedAt:text('revoked_at'),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),viewCount:integer('view_count').notNull().default(0),lastViewedAt:text('last_viewed_at'),failedAttempts:integer('failed_attempts').notNull().default(0),lockedUntil:text('locked_until'),
+});

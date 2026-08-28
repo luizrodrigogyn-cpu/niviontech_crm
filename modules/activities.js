@@ -5,6 +5,18 @@ export function todayISO(now=new Date()){
 }
 export function formatDate(date){return new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short'}).format(new Date(date+'T12:00:00')).replace('.','')}
 
+export function shiftActivity(activity,days,now=new Date()){
+  const base=new Date(now);base.setHours(12,0,0,0);base.setDate(base.getDate()+Math.max(0,Number(days)||0));
+  activity.date=todayISO(base);activity.done=false;activity.completedAt=null;activity.updatedAt=new Date().toISOString();
+  return activity;
+}
+
+export function completeActivityWithNext(activity,next,now=new Date()){
+  activity.done=true;activity.completedAt=now.toISOString();activity.updatedAt=now.toISOString();
+  if(!next?.title||!next?.date)return{activity,nextActivity:null};
+  return{activity,nextActivity:{id:`activity-${now.getTime()}-next`,title:String(next.title).trim(),type:next.type||'Follow-up',client:activity.client,date:next.date,time:next.time||activity.time||'09:00',note:next.note||`Continuidade de: ${activity.title}`,owner:activity.owner||'',done:false,createdAt:now.toISOString()}};
+}
+
 function normalizedName(value=''){return value.trim().toLocaleLowerCase('pt-BR')}
 function daysBetween(start,end){return Math.max(0,Math.floor((new Date(end+'T12:00:00')-new Date(start+'T12:00:00'))/86400000))}
 
