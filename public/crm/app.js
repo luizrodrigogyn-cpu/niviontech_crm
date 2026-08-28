@@ -89,7 +89,8 @@ const initialProposals=[{id:'proposal-1',title:'Proposta de implantação',clien
 const initialActivities=[{id:'activity-1',title:'Apresentar proposta',type:'Reunião',client:'Almeida Engenharia',date:new Date().toISOString().slice(0,10),time:'10:00',note:'Apresentar condições comerciais',done:false},{id:'activity-2',title:'Retornar contato',type:'Ligação',client:'Café do Cerrado',date:new Date().toISOString().slice(0,10),time:'14:30',note:'Confirmar necessidades',done:false},{id:'activity-3',title:'Revisar contrato',type:'Tarefa',client:'Studio Aurora',date:new Date().toISOString().slice(0,10),time:'16:00',note:'Validar cláusulas finais',done:false}];
 
 function getOwner(){try{return JSON.parse(localStorage.getItem(STORAGE.owner))}catch{return null}}
-function getCompany(){try{const company=JSON.parse(localStorage.getItem(STORAGE.company));if(company&&!company.plan){company.plan='essential';localStorage.setItem(STORAGE.company,JSON.stringify(company))}return company}catch{return null}}
+function normalizeCompanyPlan(plan){return plan==='performance'?'intelligent':plan==='team'?'growth':['essential','growth','intelligent'].includes(plan)?plan:'essential'}
+function getCompany(){try{const company=JSON.parse(localStorage.getItem(STORAGE.company));if(company){const plan=normalizeCompanyPlan(company.plan);if(company.plan!==plan){company.plan=plan;localStorage.setItem(STORAGE.company,JSON.stringify(company))}}return company}catch{return null}}
 function saveCompany(company){localStorage.setItem(STORAGE.company,JSON.stringify(company));return company}
 function applyAdaptiveImageFit(image,isCustom=true){
   if(!image)return;
@@ -111,7 +112,7 @@ function resizeCompanyLogo(file){
     reader.readAsDataURL(file);
   });
 }
-function companyPlanLabel(plan){return{essential:'Essencial',team:'Equipe',performance:'Performance'}[plan]||'Essencial'}
+function companyPlanLabel(plan){return{essential:'Essencial',growth:'Crescimento',intelligent:'Inteligente'}[normalizeCompanyPlan(plan)]||'Essencial'}
 function getUsers(){try{const stored=JSON.parse(localStorage.getItem(USERS_KEY));if(Array.isArray(stored)&&stored.length)return stored;const owner=getOwner();return owner?[{...owner,id:owner.id||'owner',profile:'Proprietário/Admin',visibility:'all',status:'active'}]:[]}catch{return []}}
 function saveUsers(users){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
 function getGoals(){try{const stored=JSON.parse(localStorage.getItem('niviontech_sales_goals'));return stored&&typeof stored==='object'?stored:{}}catch{return{}}}
@@ -229,7 +230,7 @@ $('#accessForm').addEventListener('submit',event=>{event.preventDefault();locati
 
 const appState={onboardingStep:0,onboardingDraft:{},currentView:'today',currentUser:null,activeClientFilter:'Todos',activeActivityFilter:'pending',activeDealId:null,activeClientId:null,lastMoveAction:null,undoTimer:null,activeProposalFilter:'all',pendingClientMerge:null};
 const steps=[
-  {title:'Conte um pouco sobre sua empresa',intro:'Isso ajuda o Orbit a preparar uma experiência mais adequada.',tip:'O plano é apenas uma configuração nesta fase. Não existe cobrança associada.',html:()=>`<div class="onboarding-fields"><label>Nome da empresa<input id="companyName" value="${appState.onboardingDraft.name||''}" placeholder="Ex.: NivionTech" required></label><label>Segmento<input id="companySegment" value="${appState.onboardingDraft.segment||''}" placeholder="Ex.: Serviços"></label><label>Tamanho da equipe<select id="companySize"><option>Somente eu</option><option>2 a 5 pessoas</option><option>6 a 15 pessoas</option><option>Mais de 15 pessoas</option></select></label><label>Plano da empresa<select id="companyPlan"><option value="essential">Essencial</option><option value="team">Equipe</option><option value="performance">Performance</option></select></label></div>`},
+  {title:'Conte um pouco sobre sua empresa',intro:'Isso ajuda o Orbit a preparar uma experiência mais adequada.',tip:'Toda nova empresa começa no Essencial e pode evoluir depois sem perder dados.',html:()=>`<div class="onboarding-fields"><label>Nome da empresa<input id="companyName" value="${appState.onboardingDraft.name||''}" placeholder="Ex.: NivionTech" required></label><label>Segmento<input id="companySegment" value="${appState.onboardingDraft.segment||''}" placeholder="Ex.: Serviços"></label><label>Tamanho da equipe<select id="companySize"><option>Somente eu</option><option>2 a 5 pessoas</option><option>6 a 15 pessoas</option><option>Mais de 15 pessoas</option></select></label><label>Experiência inicial<select id="companyPlan"><option value="essential">Essencial — organize sua operação</option><option value="growth">Crescimento — conduza sua equipe</option><option value="intelligent">Inteligente — transforme dados em vendas</option></select></label></div>`},
   {title:'Como vocês vendem hoje?',intro:'Escolha a opção que mais representa sua rotina comercial.',tip:'Não existe resposta errada. O objetivo é adaptar o CRM à sua realidade.',html:()=>`<div class="choice-grid" data-choice="salesModel"><button class="choice" data-value="WhatsApp"><span>◌</span><strong>Principalmente WhatsApp</strong><small>Conversas e retornos manuais</small></button><button class="choice" data-value="Planilhas"><span>▦</span><strong>Planilhas e anotações</strong><small>Controle distribuído</small></button><button class="choice" data-value="Processo"><span>◇</span><strong>Já temos um processo</strong><small>Etapas comerciais definidas</small></button></div>`},
   {title:'Qual é sua principal prioridade?',intro:'O Orbit usará essa escolha para organizar sua primeira tela “Hoje”.',tip:'Sua implantação está quase pronta. Depois desta etapa, você entrará no CRM.',html:()=>`<div class="choice-grid" data-choice="priority"><button class="choice" data-value="Organizar"><span>✓</span><strong>Organizar contatos</strong><small>Centralizar clientes e histórico</small></button><button class="choice" data-value="Vender"><span>↗</span><strong>Vender mais</strong><small>Acompanhar oportunidades</small></button><button class="choice" data-value="Cobrar"><span>R$</span><strong>Receber melhor</strong><small>Seguir até o pagamento</small></button></div>`}
 ];
@@ -288,6 +289,7 @@ function openDashboard(owner){
   document.querySelectorAll('[data-view="settings"]').forEach(element=>element.classList.toggle('admin-hidden',owner.profile!=='Proprietário/Admin'));
   document.body.dataset.userExperience=['Proprietário/Admin','Gestor Comercial'].includes(owner.profile)?'management':'seller';
   syncRankingAccess();
+  applyPlanExperience();
   showView('today');
 }
 
@@ -299,10 +301,19 @@ function escapeHtml(value=''){return String(value).replace(/[&<>'\"]/g,char=>({'
 function ownerInitials(name='Admin'){return name.split(' ').slice(0,2).map(part=>part[0]).join('').toUpperCase()}
 function canManageReceipts(){return ['Proprietário/Admin','Gestor Comercial'].includes(appState.currentUser?.profile)}
 function canManageCatalog(){return ['Proprietário/Admin','Gestor Comercial'].includes(appState.currentUser?.profile)}
+const PLAN_LEVELS={essential:1,growth:2,intelligent:3};
+const VIEW_MIN_PLAN={success:'growth',channels:'growth',cadences:'growth',organize:'growth',orbitCoach:'growth',playbooks:'growth',closingPlans:'growth',receipts:'growth',reports:'growth',ranking:'growth',team:'growth',templates:'growth',growthOs:'intelligent'};
+function currentPlan(){return normalizeCompanyPlan(getCompany()?.plan)}
+function planAllowsView(view){return PLAN_LEVELS[currentPlan()]>=PLAN_LEVELS[VIEW_MIN_PLAN[view]||'essential']}
+function applyPlanExperience(){const plan=currentPlan(),label=companyPlanLabel(plan);document.body.dataset.companyPlan=plan;$('#sidebarPlanName').textContent=label;document.querySelectorAll('[data-view]').forEach(element=>element.classList.toggle('plan-hidden',!planAllowsView(element.dataset.view)));document.querySelectorAll('.guided-nav-group').forEach(group=>{const visible=[...group.querySelectorAll('.guided-nav-children [data-view]')].some(item=>!item.classList.contains('plan-hidden')&&!item.classList.contains('admin-hidden'));group.classList.toggle('plan-group-hidden',!visible)});}
+function renderPlanCenter(){const plan=currentPlan(),copy={essential:['Comece organizando sua operação.','Clientes, negociações, atividades e propostas em uma experiência objetiva.'],growth:['Sua empresa está pronta para conduzir o processo.','O Orbit, a gestão da equipe e os roteiros ajudam a vender com consistência.'],intelligent:['Transforme evidências em decisões.','Previsão, coaching e inteligência comercial operam na experiência completa.']}[plan];$('#currentPlanName').textContent=companyPlanLabel(plan);$('#planRecommendationTitle').textContent=copy[0];$('#planRecommendationText').textContent=copy[1];document.querySelectorAll('[data-plan-card]').forEach(card=>card.classList.toggle('current',card.dataset.planCard===plan));document.querySelectorAll('[data-activate-plan]').forEach(button=>{const active=button.dataset.activatePlan===plan;button.disabled=active;button.textContent=active?'Plano atual ✓':`Ativar ${companyPlanLabel(button.dataset.activatePlan)}`})}
+function activatePlan(plan){if(appState.currentUser?.profile!=='Proprietário/Admin')return;const company=getCompany()||{};company.plan=normalizeCompanyPlan(plan);company.planUpdatedAt=new Date().toISOString();company.planUpdatedBy=appState.currentUser?.name||'';saveCompany(company);applyPlanExperience();renderPlanCenter();renderCompanyBrand()}
 
 function showView(view){
+  if(!planAllowsView(view))view='plan';
   if(view==='team'&&!canManageGoals())view='today';
   if((view==='settings'||view==='templates')&&appState.currentUser?.profile!=='Proprietário/Admin')view='today';
+  if(view==='plan'&&appState.currentUser?.profile!=='Proprietário/Admin')view='today';
   if(view==='ranking'&&!canSeeRanking())view='today';
   if(view==='receipts'&&!canManageReceipts())view='today';
   if(view==='catalog'&&!canManageCatalog())view='today';
@@ -310,8 +321,8 @@ function showView(view){
   const pipeline=view==='pipeline';
   const clients=view==='clients';
   const activities=view==='activities';
-  const organize=view==='organize',orbitCoach=view==='orbitCoach',playbooks=view==='playbooks',closingPlans=view==='closingPlans',growthOs=view==='growthOs',cadences=view==='cadences',channels=view==='channels',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',catalog=view==='catalog',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
-  const secondary=pipeline||clients||activities||channels||cadences||success||organize||orbitCoach||playbooks||closingPlans||growthOs||ranking||proposals||receipts||catalog||settings||team||templates||reports;
+  const organize=view==='organize',orbitCoach=view==='orbitCoach',playbooks=view==='playbooks',closingPlans=view==='closingPlans',growthOs=view==='growthOs',cadences=view==='cadences',channels=view==='channels',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',catalog=view==='catalog',plan=view==='plan',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
+  const secondary=pipeline||clients||activities||channels||cadences||success||organize||orbitCoach||playbooks||closingPlans||growthOs||ranking||proposals||receipts||catalog||plan||settings||team||templates||reports;
   $('#todayView').classList.toggle('hidden',secondary);
   $('#pipelineView').classList.toggle('hidden',!pipeline);
   $('#clientsView').classList.toggle('hidden',!clients);
@@ -328,9 +339,10 @@ function showView(view){
   $('#closingPlansView').classList.toggle('hidden',!closingPlans);
   $('#growthOsView').classList.toggle('hidden',!growthOs);
   $('#catalogView').classList.toggle('hidden',!catalog);
-  const titles={today:['Meu dia','O que precisa avançar agora'],pipeline:['Negociações','Do primeiro contato ao recebimento'],clients:['Clientes','Relacionamentos, memória e oportunidades'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Próximos passos em execução'],channels:['Importar interações','Agenda, e-mails e memória comercial'],closingPlans:['Roteiro de fechamento','Quem faz o quê até a decisão'],growthOs:['Inteligência de vendas','Sinais, previsão, coaching e decisões'],cadences:['Cadências','Sequências comerciais conduzidas'],orbitCoach:['Orbit IA','Prepare, analise e avance negociações'],playbooks:['Método de vendas','Processo comercial conduzido'],organize:['Analisar conversa','Transforme atendimento em memória e ação'],ranking:['Metas e ranking','Progresso da equipe'],proposals:['Propostas','Ofertas, versões e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],catalog:['Produtos e serviços','Catálogo comercial e histórico do cliente'],reports:['Visão executiva','Indicadores e riscos essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  $('#planView').classList.toggle('hidden',!plan);
+  const titles={today:['Meu dia','O que precisa avançar agora'],pipeline:['Negociações','Do primeiro contato ao recebimento'],clients:['Clientes','Relacionamentos, memória e oportunidades'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Próximos passos em execução'],channels:['Importar interações','Agenda, e-mails e memória comercial'],closingPlans:['Roteiro de fechamento','Quem faz o quê até a decisão'],growthOs:['Inteligência de vendas','Sinais, previsão, coaching e decisões'],cadences:['Cadências','Sequências comerciais conduzidas'],orbitCoach:['Orbit IA','Prepare, analise e avance negociações'],playbooks:['Método de vendas','Processo comercial conduzido'],organize:['Analisar conversa','Transforme atendimento em memória e ação'],ranking:['Metas e ranking','Progresso da equipe'],proposals:['Propostas','Ofertas, versões e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],catalog:['Produtos e serviços','Catálogo comercial e histórico do cliente'],plan:['Plano e evolução','Avance sem perder simplicidade'],reports:['Visão executiva','Indicadores e riscos essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
-  $('#newButton').style.display=['orbitCoach','playbooks','closingPlans','growthOs','organize','channels','cadences','success','ranking','settings','receipts','catalog','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').style.display=['orbitCoach','playbooks','closingPlans','growthOs','organize','channels','cadences','success','ranking','settings','receipts','catalog','plan','templates','reports'].includes(view)?'none':'block';
   $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   syncGuidedNavigation(view);
@@ -345,6 +357,7 @@ function showView(view){
   if(proposals)renderProposals();
   if(receipts)renderReceipts();
   if(catalog)renderCatalog();
+  if(plan)renderPlanCenter();
   if(settings)renderSettings();
   if(team)renderTeam();
   if(ranking)renderRanking();
@@ -358,7 +371,7 @@ function showView(view){
 }
 
 function syncGuidedNavigation(view){
-  const groups={deals:['pipeline','activities','proposals','closingPlans','cadences','channels'],clients:['clients','success'],orbit:['orbitCoach','organize','playbooks'],management:['reports','growthOs','catalog','receipts','ranking','team','templates','settings']};
+  const groups={deals:['pipeline','activities','proposals','closingPlans','cadences','channels'],clients:['clients','catalog','success'],orbit:['orbitCoach','organize','playbooks'],management:['reports','growthOs','receipts','ranking','team','templates','settings']};
   Object.entries(groups).forEach(([group,views])=>{const details=document.querySelector(`[data-nav-group="${group}"]`);if(details&&views.includes(view))details.open=true});
 }
 
@@ -910,6 +923,7 @@ $('#markReceived').onclick=()=>{if(!canManageReceipts())return;const value=Numbe
 $('#interactionForm').onsubmit=event=>{event.preventDefault();const text=new FormData(event.target).get('text').trim();if(!text)return;const clients=getClients();const client=clients.find(item=>item.id===appState.activeClientId);client.interactions=client.interactions||[];client.interactions.unshift({id:'interaction-'+Date.now(),title:'Interação registrada',text,date:new Date().toISOString()});addEntityHistory(client,'Cliente atualizado','Nova interação registrada');saveClients(clients);event.target.reset();openClientDrawer(client.id)};
 $('#clientStrategyForm').onsubmit=event=>{event.preventDefault();const clients=getClients(),client=clients.find(item=>item.id===appState.activeClientId);if(!client)return;client.mainContact=$('#drawerClientMainContact').value.trim();client.decisionMaker=$('#drawerClientDecisionMaker').value.trim();client.accountOwner=$('#drawerClientAccountOwner').value.trim();client.icpFit=$('#drawerClientIcpFit').value;client.renewalDate=$('#drawerClientRenewalDate').value;client.satisfaction=$('#drawerClientSatisfaction').value;client.goal=$('#drawerClientGoal').value.trim();client.strategicNotes=$('#drawerClientStrategicNotes').value.trim();client.updatedAt=new Date().toISOString();addEntityHistory(client,'Mapa do relacionamento atualizado','Contato, decisão, aderência ao ICP, renovação e objetivo comercial revisados');saveClients(clients);openClientDrawer(client.id)};
 $('#catalogForm').onsubmit=event=>{event.preventDefault();if(!canManageCatalog())return;const data=Object.fromEntries(new FormData(event.currentTarget)),items=getCatalog();items.unshift({id:'catalog-'+Date.now(),name:data.name.trim(),type:data.type,category:data.category.trim(),price:Number(data.price||0),status:data.status,description:data.description.trim(),createdAt:new Date().toISOString(),createdBy:appState.currentUser?.name||''});saveCatalog(items);event.currentTarget.reset();renderCatalog()};$('#catalogSearch').oninput=renderCatalog;
+document.querySelectorAll('[data-activate-plan]').forEach(button=>button.onclick=()=>activatePlan(button.dataset.activatePlan));
 $('#clientProductForm').onsubmit=event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.currentTarget)),catalogItem=getCatalog().find(item=>item.id===data.catalogId),clients=getClients(),client=clients.find(item=>item.id===appState.activeClientId);if(!client||!catalogItem)return;const record={id:'client-product-'+Date.now(),catalogId:catalogItem.id,name:catalogItem.name,status:data.status,quantity:Number(data.quantity||1),value:Number(data.value||catalogItem.price||0),date:data.date,note:data.note.trim(),createdAt:new Date().toISOString(),createdBy:appState.currentUser?.name||''};client.products=client.products||[];client.products.unshift(record);addEntityHistory(client,`${clientProductStatusLabel(record.status)} · ${catalogItem.name}`,[record.value?formatMoney(record.value):'',record.note].filter(Boolean).join(' · ')||'Produto ou serviço vinculado ao cliente');saveClients(clients);event.currentTarget.reset();openClientDrawer(client.id)};
 $('#stakeholderForm').onsubmit=event=>{event.preventDefault();const clients=getClients(),client=clients.find(item=>item.id===appState.activeClientId);if(!client)return;const stakeholder=Object.fromEntries(new FormData(event.currentTarget));stakeholder.id='stakeholder-'+Date.now();stakeholder.createdAt=new Date().toISOString();client.stakeholders=client.stakeholders||[];client.stakeholders.push(stakeholder);if(stakeholder.role==='decision'&&!client.decisionMaker)client.decisionMaker=stakeholder.name;if(stakeholder.role==='champion'&&!client.mainContact)client.mainContact=stakeholder.name;addEntityHistory(client,'Comitê de compra atualizado',`${stakeholder.name} adicionado como ${stakeholderRoles.find(item=>item.id===stakeholder.role)?.label||stakeholder.role}`);saveClients(clients);event.currentTarget.reset();openClientDrawer(client.id)};
 $('#exportBackup').onclick=exportBackup;$('#exportClientsCsv').onclick=exportClientsCsv;

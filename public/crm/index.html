@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260828-5">
+  <link rel="stylesheet" href="styles.css?v=20260828-6">
   <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
   <style>#appScreen h1{font-family:Manrope,sans-serif!important}</style>
   <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
@@ -71,7 +71,7 @@
         </details>
         <details class="guided-nav-group" data-nav-group="clients">
           <summary><i>▣</i><span><strong>Clientes</strong><small>Relacionamento e expansão</small></span><b>⌄</b></summary>
-          <div class="guided-nav-children"><button data-view="clients">Visão de clientes</button><button data-view="success">Sucesso e expansão</button></div>
+          <div class="guided-nav-children"><button data-view="clients">Visão de clientes</button><button class="manager-only" data-view="catalog">Produtos e serviços</button><button data-view="success">Sucesso e expansão</button></div>
         </details>
         <details class="guided-nav-group" data-nav-group="orbit">
           <summary><i>✦</i><span><strong>Orbit IA</strong><small>Preparar, analisar e avançar</small></span><b>⌄</b></summary>
@@ -79,10 +79,11 @@
         </details>
         <details class="guided-nav-group manager-only" data-nav-group="management">
           <summary><i>⌁</i><span><strong>Gestão</strong><small>Previsão, equipe e resultados</small></span><b>⌄</b></summary>
-          <div class="guided-nav-children"><button data-view="reports">Visão executiva</button><button data-view="growthOs">Inteligência de vendas</button><button class="manager-only" data-view="catalog">Produtos e serviços</button><button class="manager-only" data-view="receipts">Recebimentos</button><button id="rankingNav" data-view="ranking" hidden>Metas e ranking</button><button class="manager-only" data-view="team">Equipe e acessos</button><button class="admin-only" data-view="templates">Modelos de funil</button></div>
+          <div class="guided-nav-children"><button data-view="reports">Visão executiva</button><button data-view="growthOs">Inteligência de vendas</button><button class="manager-only" data-view="receipts">Recebimentos</button><button id="rankingNav" data-view="ranking" hidden>Metas e ranking</button><button class="manager-only" data-view="team">Equipe e acessos</button><button class="admin-only" data-view="templates">Modelos de funil</button></div>
         </details>
       </nav>
       <div class="sidebar-footer">
+        <button class="settings admin-only plan-evolution-button" data-view="plan"><i>◇</i><span><strong>Plano e evolução</strong><small id="sidebarPlanName">Essencial</small></span></button>
         <button class="settings" data-view="settings"><i>⚙</i>Configurações</button>
         <div class="profile"><span id="profileInitial">A</span><div><strong id="profileName">Administrador</strong><small id="profileRole">Proprietário/Admin</small></div></div>
         <button id="logoutButton" class="logout-button" title="Encerrar sessão"><i>↗</i>Sair</button>
@@ -309,6 +310,12 @@
         <div class="module-heading"><div><p class="overline">CONTROLE E PORTABILIDADE</p><h1>Configurações</h1><p>Seus dados permanecem sob seu controle.</p></div></div>
         <div class="settings-grid"><section class="panel-card"><h3>Empresa</h3><div id="companySettings" class="settings-data"></div></section><section class="panel-card"><h3>Ritmo comercial</h3><p>Depois deste período sem interação, o Orbit traz a negociação de volta para a tela Hoje.</p><label class="stale-days-setting">Dias sem interação<input id="staleDealDays" type="number" min="1" max="90" step="1" value="7"><small>Salvo somente neste navegador.</small></label></section><section class="panel-card"><h3>Cópia de segurança</h3><p>Exporte todos os dados em formato aberto para guardar uma cópia local.</p><button id="exportBackup" class="primary wide">Exportar backup JSON</button><button id="exportClientsCsv" class="secondary wide">Exportar clientes CSV</button></section><section class="panel-card"><h3>Perfis comerciais</h3><p>O modelo já está preparado para crescimento da equipe.</p><div class="role-list"><span>Proprietário/Admin <b>Ativo</b></span><span>Colaborador comercial <b>Disponível</b></span><span>Gestor, SDR, Executivo e Pós-venda <b>Estruturados</b></span></div></section></div>
       </div>
+      <div class="module-view hidden" id="planView">
+        <div class="module-heading plan-heading"><div><p class="overline">EVOLUÇÃO SEM PERDER SIMPLICIDADE</p><h1>Escolha o momento da sua operação.</h1><p>O CRM revela novas capacidades conforme sua empresa amadurece. Seus dados permanecem preservados em qualquer nível.</p></div><div class="module-summary"><small>PLANO ATUAL</small><strong id="currentPlanName">Essencial</strong></div></div>
+        <section class="plan-value-banner"><span>O</span><div><small>ORBIT RECOMENDA</small><h2 id="planRecommendationTitle">Comece organizando sua operação.</h2><p id="planRecommendationText">Clientes, negociações, atividades e propostas em uma experiência objetiva.</p></div></section>
+        <section class="plan-cards"><article data-plan-card="essential"><header><span>01</span><small>PARA COMEÇAR</small></header><h2>Essencial</h2><strong>Organize sua operação.</strong><p>Clareza para saber quem atender, o que fazer e quanto pode vender.</p><ul><li>Meu dia e prioridades</li><li>Pipeline e atividades</li><li>Clientes e histórico</li><li>Propostas</li><li>Produtos e serviços</li></ul><button type="button" data-activate-plan="essential">Ativar Essencial</button></article><article data-plan-card="growth"><header><span>02</span><small>PARA CONDUZIR</small></header><h2>Crescimento</h2><strong>Conduza sua equipe.</strong><p>Processo, acompanhamento e inteligência para perder menos vendas.</p><ul><li>Tudo do Essencial</li><li>Orbit IA e análise de conversas</li><li>Cadências e roteiros</li><li>Equipe, metas e relatórios</li><li>Sucesso e recuperação</li></ul><button type="button" data-activate-plan="growth">Ativar Crescimento</button></article><article class="featured" data-plan-card="intelligent"><header><span>03</span><small>EXPERIÊNCIA COMPLETA</small></header><h2>Inteligente</h2><strong>Transforme dados em vendas.</strong><p>Previsibilidade, coaching e decisões conduzidas por evidências.</p><ul><li>Tudo do Crescimento</li><li>Deal Score e forecast</li><li>Radar de ICP</li><li>Coaching e automações</li><li>Cockpit e vazamentos</li></ul><button type="button" data-activate-plan="intelligent">Ativar Inteligente</button></article></section>
+        <p class="plan-safety-note">Você pode avançar ou reduzir o nível sem excluir clientes, negociações, históricos ou configurações.</p>
+      </div>
       <div class="module-view hidden" id="teamView">
         <div class="module-heading"><div><p class="overline">PESSOAS E RESPONSABILIDADES</p><h1>Equipe e acessos</h1><p>Comece simples e separe os papéis conforme a empresa crescer.</p></div><div class="module-summary"><small>USUÁRIOS ATIVOS</small><strong id="activeUsersCount">1 usuário</strong></div></div>
         <div class="role-explanation"><span class="orbit-mini">O</span><div><strong>Modelo progressivo</strong><p>Na pequena empresa, o Colaborador comercial acumula SDR, Executivo e Pós-venda. Os papéis especializados já ficam preparados no modelo.</p></div></div>
@@ -416,6 +423,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-<script type="module" src="app.js?v=20260828-6"></script>
+<script type="module" src="app.js?v=20260828-7"></script>
 </body>
 </html>
