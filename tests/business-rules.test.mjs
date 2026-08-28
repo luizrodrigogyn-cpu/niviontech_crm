@@ -8,6 +8,7 @@ import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
 import {buildManagementForecast} from '../modules/management-intelligence.js';
 import {buildCadencePlan,cadenceProgress} from '../modules/cadences.js';
 import {buildCustomerSuccessPortfolio} from '../modules/customer-success.js';
+import {analyzeBuyingCommittee} from '../modules/buying-committee.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -171,6 +172,21 @@ test('Fase 6: cliente saudável e recebido gera sinal de expansão',()=>{
   assert.equal(result.expansion,1);
   assert.equal(result.accounts[0].score,100);
   assert.equal(result.accounts[0].expansion,true);
+});
+
+test('Fase 7: comitê completo mostra cobertura comercial total',()=>{
+  const result=analyzeBuyingCommittee([{name:'Ana',role:'decision',influence:'high',sentiment:'support'},{name:'Carlos',role:'champion',influence:'high',sentiment:'support'},{name:'Paula',role:'user',influence:'medium',sentiment:'neutral'}]);
+  assert.equal(result.coverage,100);
+  assert.equal(result.risk,'healthy');
+  assert.equal(result.supporters,2);
+  assert.equal(result.missing.length,0);
+});
+
+test('Fase 7: decisor resistente sinaliza risco político alto',()=>{
+  const result=analyzeBuyingCommittee([{name:'Diretor',role:'decision',influence:'high',sentiment:'resist'}]);
+  assert.equal(result.risk,'high');
+  assert.ok(result.missing.includes('champion'));
+  assert.ok(result.recommendations.some(item=>item.includes('Diretor')));
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{
