@@ -10,6 +10,7 @@ import {buildCadencePlan,cadenceProgress} from '../modules/cadences.js';
 import {buildCustomerSuccessPortfolio} from '../modules/customer-success.js';
 import {analyzeBuyingCommittee} from '../modules/buying-committee.js';
 import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
+import {buildNextBestActions} from '../modules/next-best-action.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -153,6 +154,23 @@ test('Nova Fase 2: preparação expõe lacunas antes da reunião',()=>{
   assert.ok(result.risks.some(item=>/Decisor/i.test(item)));
   assert.ok(result.questions.some(item=>/quem participa/i.test(item)));
   assert.ok(result.readiness<60);
+});
+
+test('Nova Fase 3: compromisso vencido tem prioridade e já vem executável',()=>{
+  const now=new Date(2026,7,27,12),deals=[{id:'d1',client:'Empresa Sol',title:'Implantação',value:18000,stage:'proposal',next:'Apresentar proposta',nextDate:'2026-08-30',status:'open'}],activities=[{id:'a1',client:'Empresa Sol',title:'Retornar para Marina',date:'2026-08-25',time:'10:00',done:false}];
+  const result=buildNextBestActions({deals,activities,stages:[{id:'new'},{id:'proposal'}],now});
+  assert.equal(result[0].type,'overdue');
+  assert.equal(result[0].suggestedDate,'2026-08-27');
+  assert.match(result[0].message,/Empresa/i);
+  assert.equal(result[0].activityId,'a1');
+});
+
+test('Nova Fase 3: proposta sem retorno gera mensagem e orientação de etapa',()=>{
+  const now=new Date(2026,7,27,12),deals=[{id:'d1',client:'Café do Cerrado',title:'Plano anual',value:22000,stage:'proposal',next:'Aguardar decisão',nextDate:'2026-08-30',status:'open',createdAt:'2026-08-20T12:00:00'}],clients=[{name:'Café do Cerrado',interactions:[{date:'2026-08-26T12:00:00'}]}],proposals=[{dealId:'d1',status:'sent',createdAt:'2026-08-20T12:00:00'}];
+  const result=buildNextBestActions({deals,clients,proposals,stages:[{id:'new'},{id:'proposal'},{id:'closing'}],now});
+  assert.equal(result[0].type,'proposal');
+  assert.match(result[0].message,/revisar a proposta/i);
+  assert.match(result[0].stageSuggestion,/negociação/i);
 });
 
 test('Fase 4: previsão considera etapa, qualificação e risco',()=>{
