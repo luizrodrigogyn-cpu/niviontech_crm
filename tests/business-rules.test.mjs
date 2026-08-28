@@ -18,7 +18,7 @@ import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from
 import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
 import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit,buildIcpRadar,buildBuyingInfluenceMap,buildConversationIntelligence,buildRevenueLeakMap,buildGrowthMissions} from '../modules/growth-os.js';
 import {buildCommercialTruth,buildFunnelVelocity,buildDailyCommand} from '../modules/commercial-evolution.js';
-import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
+import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint,mergeSyncSnapshots} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
 
@@ -521,6 +521,21 @@ test('sincronização baixa a nuvem apenas quando a cópia local está limpa',()
   assert.equal(resolveStartupSync({localSnapshot:local,cloudSnapshot:cloud,meta:cleanMeta}).action,'download');
   const changed={...local,niviontech_clients:'[]'};
   assert.equal(resolveStartupSync({localSnapshot:changed,cloudSnapshot:cloud,meta:cleanMeta}).action,'conflict');
+});
+
+test('conflito de sincronização combina registros independentes sem apagar a equipe',()=>{
+  const local={niviontech_deals:JSON.stringify([{id:'d1',title:'Local',updatedAt:'2026-08-28T10:00:00Z'}]),niviontech_clients:JSON.stringify([{id:'c1',name:'Cliente local'}])};
+  const cloud={niviontech_deals:JSON.stringify([{id:'d2',title:'Nuvem',updatedAt:'2026-08-28T11:00:00Z'}]),niviontech_clients:JSON.stringify([{id:'c2',name:'Cliente nuvem'}])};
+  const merged=mergeSyncSnapshots(local,cloud),deals=JSON.parse(merged.payload.niviontech_deals),clients=JSON.parse(merged.payload.niviontech_clients);
+  assert.deepEqual(deals.map(item=>item.id).sort(),['d1','d2']);
+  assert.deepEqual(clients.map(item=>item.id).sort(),['c1','c2']);
+  assert.equal(merged.stats.mergedRecords,4);
+});
+
+test('conflito do mesmo registro preserva a alteração mais recente',()=>{
+  const local={niviontech_deals:JSON.stringify([{id:'d1',title:'Versão local',updatedAt:'2026-08-28T12:00:00Z'}])},cloud={niviontech_deals:JSON.stringify([{id:'d1',title:'Versão antiga',updatedAt:'2026-08-28T10:00:00Z'}])};
+  const deal=JSON.parse(mergeSyncSnapshots(local,cloud).payload.niviontech_deals)[0];
+  assert.equal(deal.title,'Versão local');
 });
 
 function fakeStorage(){
