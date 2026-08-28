@@ -31,3 +31,37 @@ export function buildCoachingBrief(user,deals=[],activities=[],period=''){
 export function buildRevenueCockpit(deals=[],activities=[],stages=[],today=new Date().toISOString().slice(0,10)){
   const open=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost'),cards=open.map(deal=>buildDealScorecard(deal,stages,today)),pipeline=open.reduce((sum,deal)=>sum+amount(deal),0),weighted=cards.reduce((sum,item)=>sum+amount(item.deal)*(item.score/100),0),atRisk=cards.filter(item=>item.risks.length),hot=cards.filter(item=>item.temperature==='hot'),overdue=activities.filter(item=>!item.done&&item.date<today),priorities=[...atRisk.sort((a,b)=>amount(b.deal)-amount(a.deal)).slice(0,3).map(item=>({title:item.deal.title,text:`${item.deal.client} · ${item.risks[0]}`,value:amount(item.deal),target:'pipeline'})),...overdue.slice(0,2).map(item=>({title:item.title,text:`${item.client} · atividade atrasada`,value:0,target:'activities'}))];return{pipeline,weighted,atRiskValue:atRisk.reduce((sum,item)=>sum+amount(item.deal),0),hotValue:hot.reduce((sum,item)=>sum+amount(item.deal),0),hotCount:hot.length,overdue:overdue.length,priorities,cards};
 }
+
+export function buildIcpRadar(clients=[],deals=[],company={}){
+  const won=deals.filter(deal=>deal.status==='won'),wonNames=new Set(won.map(deal=>norm(deal.client))),segments=new Map();
+  clients.forEach(client=>{const key=client.segment||'Não informado',current=segments.get(key)||{segment:key,clients:0,wins:0,pipeline:0,revenue:0};current.clients+=1;if(wonNames.has(norm(client.name)))current.wins+=1;deals.filter(deal=>norm(deal.client)===norm(client.name)).forEach(deal=>{if(deal.status==='won')current.revenue+=amount(deal);else if(deal.status!=='lost')current.pipeline+=amount(deal)});segments.set(key,current)});
+  const ranked=[...segments.values()].map(item=>({...item,score:Math.min(100,Math.round(25+item.wins*25+Math.min(30,item.pipeline/5000)+Math.min(20,item.clients*4)))})).sort((a,b)=>b.score-a.score),best=ranked[0];
+  return{companySegment:company.segment||company.market||'',best,segments:ranked,idealProfile:best?`${best.segment} · ${best.wins?`${best.wins} venda${best.wins===1?'':'s'} validada${best.wins===1?'':'s'}`:'maior potencial atual'}`:'Cadastre clientes e vendas para descobrir seu ICP'};
+}
+
+export function buildBuyingInfluenceMap(deals=[],clients=[]){
+  const open=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost').map(deal=>{const client=clients.find(item=>norm(item.name)===norm(deal.client)),stakeholders=client?.stakeholders||[],roles=new Set(stakeholders.map(item=>norm(item.role))),hasDecision=Boolean(deal.decisionMaker)||[...roles].some(role=>/decisor|patrocinador|sponsor/.test(role)),hasUser=[...roles].some(role=>/usuário|usuario|influenciador|técnico|tecnico/.test(role)),hasFinance=[...roles].some(role=>/finance|compras|juríd|jurid/.test(role)),coverage=[hasDecision,hasUser,hasFinance].filter(Boolean).length,percent=Math.round(coverage/3*100);return{deal,stakeholders,coverage:percent,missing:[!hasDecision&&'Decisor econômico',!hasUser&&'Usuário ou influenciador',!hasFinance&&'Compras, financeiro ou jurídico'].filter(Boolean)}}).sort((a,b)=>a.coverage-b.coverage||amount(b.deal)-amount(a.deal));
+  return{accounts:open,average:open.length?Math.round(open.reduce((sum,item)=>sum+item.coverage,0)/open.length):0,exposedValue:open.filter(item=>item.coverage<67).reduce((sum,item)=>sum+amount(item.deal),0)};
+}
+
+export function buildConversationIntelligence(deals=[]){
+  const open=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost').map(deal=>{const memory=deal.orbitMemory||{},evidence=[memory.summary,(memory.pains||[]).length,(memory.objections||[]).length,memory.lastNextStep||deal.next,(memory.decisionMakers||[]).length||deal.decisionMaker,memory.commitments?.length].filter(Boolean).length,score=Math.round(evidence/6*100),gaps=[!memory.summary&&'Resumo da conversa',!(memory.pains||[]).length&&!deal.pain&&'Dor confirmada',!(memory.objections||[]).length&&!deal.objection&&'Objeções',!memory.lastNextStep&&!deal.next&&'Próximo passo'].filter(Boolean);return{deal,score,gaps,headline:score>=84?'Conversa com evidências fortes':score>=50?'Memória em construção':'Negociação sem contexto suficiente'}}).sort((a,b)=>a.score-b.score||amount(b.deal)-amount(a.deal));
+  return{conversations:open,average:open.length?Math.round(open.reduce((sum,item)=>sum+item.score,0)/open.length):0,withoutMemory:open.filter(item=>item.score<50).length};
+}
+
+export function buildRevenueLeakMap(deals=[],activities=[],today=new Date().toISOString().slice(0,10)){
+  const open=deals.filter(deal=>deal.status!=='won'&&deal.status!=='lost'),leaks=[];
+  open.filter(deal=>!deal.next||!deal.nextDate).forEach(deal=>leaks.push({type:'Continuidade',severity:'high',deal,title:'Sem próximo passo',value:amount(deal),action:'Definir avanço e data'}));
+  open.filter(deal=>deal.nextDate&&deal.nextDate<today).forEach(deal=>leaks.push({type:'Prazo',severity:'high',deal,title:'Compromisso vencido',value:amount(deal),action:'Replanejar com o cliente'}));
+  open.filter(deal=>deal.movedAt&&daysBetween(String(deal.movedAt).slice(0,10),today)>=10).forEach(deal=>leaks.push({type:'Velocidade',severity:'medium',deal,title:'Negócio parado na etapa',value:amount(deal),action:'Validar avanço ou desqualificar'}));
+  activities.filter(item=>!item.done&&item.date<today).forEach(item=>{const deal=open.find(entry=>norm(entry.client)===norm(item.client));if(deal)leaks.push({type:'Execução',severity:'medium',deal,title:'Atividade atrasada',value:amount(deal),action:item.title})});
+  const unique=[...new Map(leaks.map(item=>[`${item.deal.id}-${item.type}`,item])).values()].sort((a,b)=>b.value-a.value);return{leaks:unique,leakingValue:new Set(unique.map(item=>item.deal.id)).size?open.filter(deal=>unique.some(item=>item.deal.id===deal.id)).reduce((sum,deal)=>sum+amount(deal),0):0,critical:unique.filter(item=>item.severity==='high').length};
+}
+
+export function buildGrowthMissions({deals=[],clients=[],activities=[],company={},today=new Date().toISOString().slice(0,10)}={}){
+  const influence=buildBuyingInfluenceMap(deals,clients),conversations=buildConversationIntelligence(deals),leaks=buildRevenueLeakMap(deals,activities,today),missions=[];
+  leaks.leaks.slice(0,2).forEach(item=>missions.push({kind:'Proteção de receita',title:item.action,text:`${item.deal.client} · ${item.title}`,dealId:item.deal.id,value:item.value,impact:'alto'}));
+  influence.accounts.filter(item=>item.coverage<67).slice(0,2).forEach(item=>missions.push({kind:'Influência',title:`Mapear ${item.missing[0]}`,text:`${item.deal.client} · ${item.coverage}% do comitê`,dealId:item.deal.id,value:amount(item.deal),impact:'alto'}));
+  conversations.conversations.filter(item=>item.score<50).slice(0,1).forEach(item=>missions.push({kind:'Inteligência',title:'Registrar memória da conversa',text:`${item.deal.client} · ${item.gaps[0]||'Contexto comercial'}`,dealId:item.deal.id,value:amount(item.deal),impact:'médio'}));
+  return{missions:missions.slice(0,5),protectedValue:missions.reduce((sum,item)=>sum+item.value,0),readiness:Math.max(0,100-missions.length*12),icp:buildIcpRadar(clients,deals,company)};
+}

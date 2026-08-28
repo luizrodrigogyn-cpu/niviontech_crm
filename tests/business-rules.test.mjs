@@ -16,7 +16,7 @@ import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '.
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
 import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
 import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
-import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit} from '../modules/growth-os.js';
+import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit,buildIcpRadar,buildBuyingInfluenceMap,buildConversationIntelligence,buildRevenueLeakMap,buildGrowthMissions} from '../modules/growth-os.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -150,6 +150,38 @@ test('Fase 12: cockpit executivo transforma risco em prioridades',()=>{
   assert.equal(cockpit.pipeline,45000);
   assert.ok(cockpit.atRiskValue>=40000);
   assert.ok(cockpit.priorities.length>=2);
+});
+
+test('Fase 13: radar de ICP prioriza segmentos com receita validada',()=>{
+  const radar=buildIcpRadar([{name:'A',segment:'Construção'},{name:'B',segment:'Serviços'}],[{client:'A',status:'won',value:30000},{client:'B',status:'open',value:2000}]);
+  assert.equal(radar.best.segment,'Construção');
+  assert.equal(radar.best.wins,1);
+});
+
+test('Fase 14: mapa de influência expõe papéis ausentes',()=>{
+  const map=buildBuyingInfluenceMap([{id:'d1',client:'Empresa A',status:'open',value:50000,decisionMaker:'Ana'}],[{name:'Empresa A',stakeholders:[]}]);
+  assert.equal(map.accounts[0].coverage,33);
+  assert.ok(map.accounts[0].missing.includes('Compras, financeiro ou jurídico'));
+  assert.equal(map.exposedValue,50000);
+});
+
+test('Fase 15: inteligência de conversa mede evidências comerciais',()=>{
+  const result=buildConversationIntelligence([{id:'d1',status:'open',value:10000,next:'Enviar proposta',decisionMaker:'Ana',orbitMemory:{summary:'Cliente quer reduzir retrabalho',pains:['Retrabalho'],objections:['Prazo'],commitments:['Enviar dados']}}]);
+  assert.equal(result.conversations[0].score,100);
+  assert.equal(result.withoutMemory,0);
+});
+
+test('Fase 16: detector soma receita com vazamentos sem duplicar negócio',()=>{
+  const map=buildRevenueLeakMap([{id:'d1',client:'Empresa A',status:'open',value:40000,nextDate:'2026-08-20'}],[{client:'Empresa A',title:'Responder',date:'2026-08-19',done:false}],'2026-08-27');
+  assert.equal(map.leakingValue,40000);
+  assert.ok(map.leaks.length>=2);
+});
+
+test('Fase 17: missões combinam riscos e influência em foco semanal',()=>{
+  const brief=buildGrowthMissions({deals:[{id:'d1',title:'Contrato',client:'Empresa A',status:'open',value:50000}],clients:[{name:'Empresa A',segment:'Tecnologia'}],activities:[],today:'2026-08-27'});
+  assert.ok(brief.missions.length>=2);
+  assert.ok(brief.protectedValue>=50000);
+  assert.ok(brief.readiness<100);
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
