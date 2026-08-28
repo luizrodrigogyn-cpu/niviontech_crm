@@ -6,6 +6,7 @@ import {clientRelationshipCompleteness,validateClientRegistration} from '../modu
 import {analyzeConversationText,createHandoffSummary} from '../modules/organize.js';
 import {analyzeCommercialConversation} from '../modules/orbit-intelligence.js';
 import {buildManagementForecast} from '../modules/management-intelligence.js';
+import {buildCadencePlan,cadenceProgress} from '../modules/cadences.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -136,6 +137,23 @@ test('Fase 4: inteligência alerta concentração excessiva da carteira',()=>{
   const result=buildManagementForecast(deals,stages,0);
   assert.equal(result.concentration,90);
   assert.ok(result.recommendations.some(item=>item.includes('concentrado')));
+});
+
+test('Fase 5: cadência cria uma sequência comercial com datas futuras',()=>{
+  const cadence=buildCadencePlan({templateId:'proposal',startDate:'2026-08-27',client:'Empresa Sol',dealId:'deal-1',owner:'Ana'});
+  assert.equal(cadence.steps.length,3);
+  assert.equal(cadence.steps[0].date,'2026-08-28');
+  assert.equal(cadence.steps[2].date,'2026-09-02');
+  assert.equal(cadence.client,'Empresa Sol');
+});
+
+test('Fase 5: progresso identifica próxima ação e conclusão da cadência',()=>{
+  const cadence={id:'cadence-1',steps:[{id:'step-1'},{id:'step-2'}]},activities=[{id:'a1',cadenceId:'cadence-1',title:'Ligar',date:'2026-08-28',time:'09:00',done:true},{id:'a2',cadenceId:'cadence-1',title:'Enviar proposta',date:'2026-08-29',time:'09:00',done:false}];
+  const progress=cadenceProgress(cadence,activities);
+  assert.equal(progress.percent,50);
+  assert.equal(progress.next.title,'Enviar proposta');
+  assert.equal(progress.complete,false);
+  assert.equal(cadenceProgress(cadence,activities.map(item=>({...item,done:true}))).complete,true);
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{

@@ -10,18 +10,20 @@ import {teamDomain} from './modules/team.js';
 import {organizeDomain,analyzeConversationText,createHandoffSummary} from './modules/organize.js';
 import {analyzeCommercialConversation} from './modules/orbit-intelligence.js';
 import {buildManagementForecast} from './modules/management-intelligence.js';
+import {buildCadencePlan,cadenceProgress,cadenceTemplates} from './modules/cadences.js';
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js?v=20260826-3';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
 
 const STORAGE={owner:'niviontech_owner',company:'niviontech_company'};
-const NEW_MENU_ITEMS=['orbitCoach','organize'];
+const NEW_MENU_ITEMS=['orbitCoach','organize','cadences'];
 const SESSION='niviontech_session';
 const USERS_KEY='niviontech_users';
 const PIPELINE_KEY='niviontech_pipeline';
 const CLIENTS_KEY='niviontech_clients';
 const ACTIVITIES_KEY='niviontech_activities';
 const PROPOSALS_KEY='niviontech_proposals';
+const CADENCES_KEY='niviontech_cadences';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
 const authParams=new URLSearchParams(location.search);
 const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
@@ -277,26 +279,28 @@ function showView(view){
   const pipeline=view==='pipeline';
   const clients=view==='clients';
   const activities=view==='activities';
-  const organize=view==='organize',orbitCoach=view==='orbitCoach',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
-  const secondary=pipeline||clients||activities||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
+  const organize=view==='organize',orbitCoach=view==='orbitCoach',cadences=view==='cadences',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
+  const secondary=pipeline||clients||activities||cadences||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
   $('#todayView').classList.toggle('hidden',secondary);
   $('#pipelineView').classList.toggle('hidden',!pipeline);
   $('#clientsView').classList.toggle('hidden',!clients);
   $('#activitiesView').classList.toggle('hidden',!activities);
+  $('#cadencesView').classList.toggle('hidden',!cadences);
   $('#organizeView').classList.toggle('hidden',!organize);$('#orbitCoachView').classList.toggle('hidden',!orbitCoach);$('#proposalsView').classList.toggle('hidden',!proposals);$('#receiptsView').classList.toggle('hidden',!receipts);$('#settingsView').classList.toggle('hidden',!settings);
   $('#rankingView').classList.toggle('hidden',!ranking);
   $('#teamView').classList.toggle('hidden',!team);
   $('#templatesView').classList.toggle('hidden',!templates);
   $('#reportsView').classList.toggle('hidden',!reports);
-  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],activities:['Atividades','Sua rotina comercial'],cadences:['Cadências inteligentes','Automação comercial conduzida pelo Orbit'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
-  $('#newButton').style.display=['orbitCoach','organize','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').style.display=['orbitCoach','organize','cadences','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
   $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('.sidebar').classList.remove('open');
   if(pipeline)renderPipeline();
   if(clients)renderClients();
   if(activities)renderActivities();
+  if(cadences)renderCadences();
   if(proposals)renderProposals();
   if(receipts)renderReceipts();
   if(settings)renderSettings();
@@ -455,6 +459,14 @@ const activitiesStore=createStore(ACTIVITIES_KEY,initialActivities,{afterSave:()
 function getActivities(){return activitiesStore.get()}
 function saveActivities(activities){activitiesStore.save(activities)}
 
+const cadencesStore=createStore(CADENCES_KEY,[]);
+function getCadences(){return cadencesStore.get()}
+function saveCadences(items){cadencesStore.save(items)}
+function renderCadencePreview(){const template=cadenceTemplates.find(item=>item.id===$('#cadenceTemplate').value),target=$('#cadencePreviewSteps');if(!template)return;$('#cadencePreviewDescription').textContent=template.description;target.innerHTML=template.steps.map(([title,type,offset],index)=>`<article class="cadence-preview-step"><span>${index+1}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(type)} · ${offset===0?'no início':`após ${offset} dias`}</small></div></article>`).join('')}
+function syncCadenceDeals(){const client=getClients().find(item=>item.id===$('#cadenceClient').value),select=$('#cadenceDeal'),selected=select.value;select.innerHTML='<option value="">Sem oportunidade vinculada</option>'+getDeals().filter(deal=>client&&deal.client.trim().toLowerCase()===client.name.trim().toLowerCase()).map(deal=>`<option value="${escapeHtml(deal.id)}">${escapeHtml(deal.title)}</option>`).join('');select.value=selected}
+function renderCadences(){const template=$('#cadenceTemplate'),client=$('#cadenceClient'),selectedTemplate=template.value,selectedClient=client.value;template.innerHTML=cadenceTemplates.map(item=>`<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('');template.value=selectedTemplate||cadenceTemplates[0].id;client.innerHTML='<option value="">Selecione um cliente</option>'+getClients().map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');client.value=selectedClient;$('#cadenceStart').value=$('#cadenceStart').value||todayISO();$('#cadenceOwner').value=$('#cadenceOwner').value||appState.currentUser?.name||'';syncCadenceDeals();renderCadencePreview();const activities=getActivities(),cadences=getCadences(),active=cadences.filter(item=>!cadenceProgress(item,activities).complete&&item.status!=='paused');$('#activeCadencesCount').textContent=active.length;$('#cadencesList').innerHTML=cadences.length?cadences.map(item=>{const progress=cadenceProgress(item,activities);return `<article class="cadence-run ${progress.complete?'complete':''}"><header><div><small>${escapeHtml(item.templateName)}</small><h3>${escapeHtml(item.client)}</h3></div><span>${progress.complete?'Concluída':item.status==='paused'?'Pausada':'Em andamento'}</span></header><div class="cadence-progress"><span><i style="width:${progress.percent}%"></i></span><strong>${progress.percent}%</strong></div><p>${progress.next?`Próxima ação: ${escapeHtml(progress.next.title)} · ${formatDate(progress.next.date)}`:'Sequência finalizada'}</p><footer><small>${progress.done} de ${progress.total} ações concluídas</small>${!progress.complete?`<button type="button" data-toggle-cadence="${escapeHtml(item.id)}">${item.status==='paused'?'Retomar':'Pausar'}</button>`:''}</footer></article>`}).join(''):orbitEmptyState('Nenhuma cadência ativa','Crie uma sequência e o Orbit organizará os contatos na agenda.');document.querySelectorAll('[data-toggle-cadence]').forEach(button=>button.onclick=()=>{const items=getCadences(),item=items.find(entry=>entry.id===button.dataset.toggleCadence);item.status=item.status==='paused'?'active':'paused';saveCadences(items);renderCadences()})}
+function activateCadence(event){event.preventDefault();const client=getClients().find(item=>item.id===$('#cadenceClient').value);if(!client){$('#cadenceClient').focus();return}const cadence=buildCadencePlan({templateId:$('#cadenceTemplate').value,startDate:$('#cadenceStart').value,client:client.name,dealId:$('#cadenceDeal').value,owner:$('#cadenceOwner').value.trim()});if(!cadence)return;const cadences=getCadences();cadences.unshift(cadence);saveCadences(cadences);const activities=getActivities();cadence.steps.forEach((step,index)=>activities.push({id:`activity-${Date.now()}-${index}`,cadenceId:cadence.id,cadenceStepId:step.id,title:step.title,type:step.type,client:client.name,date:step.date,time:'09:00',note:`Cadência Orbit · ${cadence.templateName}`,owner:cadence.owner,done:false}));saveActivities(activities);if(cadence.dealId){const deals=getDeals(),deal=deals.find(item=>item.id===cadence.dealId);if(deal){addEntityHistory(deal,'Cadência comercial ativada',`${cadence.templateName} · ${cadence.steps.length} ações planejadas`);saveDeals(deals)}}event.target.reset();$('#cadenceStart').value=todayISO();renderCadences()}
+
 function visibleActivities(){const search=$('#activitySearch').value.toLowerCase();return getActivities().filter(activity=>{const matchesSearch=(activity.title+' '+activity.client+' '+activity.type).toLowerCase().includes(search);const matchesFilter=appState.activeActivityFilter==='all'||appState.activeActivityFilter==='pending'&&!activity.done||appState.activeActivityFilter==='done'&&activity.done||appState.activeActivityFilter==='today'&&activity.date===todayISO()&&!activity.done;return matchesSearch&&matchesFilter}).sort((a,b)=>(a.done-b.done)||(a.date+a.time).localeCompare(b.date+b.time))}
 function renderActivities(){
   const activities=getActivities();const visible=visibleActivities();const pending=activities.filter(activity=>!activity.done);
@@ -591,6 +603,7 @@ $('#icpForm').onsubmit=saveIcp;
 $('#prepareDealButton').onclick=prepareSelectedDeal;
 $('#analysisClientSelect').onchange=()=>{const client=getClients().find(item=>item.id===$('#analysisClientSelect').value),select=$('#analysisDealSelect');select.innerHTML='<option value="">Sem oportunidade vinculada</option>'+getDeals().filter(deal=>client&&deal.client.trim().toLocaleLowerCase('pt-BR')===client.name.trim().toLocaleLowerCase('pt-BR')).map(deal=>`<option value="${escapeHtml(deal.id)}">${escapeHtml(deal.title)}</option>`).join('')};
 $('#analyzeDealConversation').onclick=analyzeDealConversation;
+$('#cadenceTemplate').onchange=renderCadencePreview;$('#cadenceClient').onchange=syncCadenceDeals;$('#cadenceForm').onsubmit=activateCadence;
 document.querySelectorAll('[data-coach-persona]').forEach(button=>button.onclick=()=>{coachState.persona=button.dataset.coachPersona;document.querySelectorAll('[data-coach-persona]').forEach(item=>item.classList.toggle('active',item===button))});
 $('#startCoachTraining').onclick=startCoachTraining;
 $('#coachMessageForm').onsubmit=submitCoachMessage;
