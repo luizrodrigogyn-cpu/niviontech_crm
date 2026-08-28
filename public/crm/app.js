@@ -15,6 +15,7 @@ import {buildCustomerSuccessPortfolio} from './modules/customer-success.js';
 import {analyzeBuyingCommittee,stakeholderRoles} from './modules/buying-committee.js';
 import {buildMeetingPreparation} from './modules/meeting-preparation.js';
 import {buildNextBestActions} from './modules/next-best-action.js';
+import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from './modules/channel-imports.js';
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync} from './modules/sync.js?v=20260826-3';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
@@ -29,6 +30,7 @@ const ACTIVITIES_KEY='niviontech_activities';
 const PROPOSALS_KEY='niviontech_proposals';
 const CADENCES_KEY='niviontech_cadences';
 const PIPELINE_CONFIG_KEY='niviontech_pipeline_config';
+const CHANNEL_IMPORT_HISTORY_KEY='niviontech_channel_import_history';
 const authParams=new URLSearchParams(location.search);
 const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
 
@@ -283,22 +285,23 @@ function showView(view){
   const pipeline=view==='pipeline';
   const clients=view==='clients';
   const activities=view==='activities';
-  const organize=view==='organize',orbitCoach=view==='orbitCoach',cadences=view==='cadences',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
-  const secondary=pipeline||clients||activities||cadences||success||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
+  const organize=view==='organize',orbitCoach=view==='orbitCoach',cadences=view==='cadences',channels=view==='channels',success=view==='success',ranking=view==='ranking',proposals=view==='proposals',receipts=view==='receipts',settings=view==='settings',team=view==='team',templates=view==='templates',reports=view==='reports';
+  const secondary=pipeline||clients||activities||channels||cadences||success||organize||orbitCoach||ranking||proposals||receipts||settings||team||templates||reports;
   $('#todayView').classList.toggle('hidden',secondary);
   $('#pipelineView').classList.toggle('hidden',!pipeline);
   $('#clientsView').classList.toggle('hidden',!clients);
   $('#successView').classList.toggle('hidden',!success);
   $('#activitiesView').classList.toggle('hidden',!activities);
+  $('#channelsView').classList.toggle('hidden',!channels);
   $('#cadencesView').classList.toggle('hidden',!cadences);
   $('#organizeView').classList.toggle('hidden',!organize);$('#orbitCoachView').classList.toggle('hidden',!orbitCoach);$('#proposalsView').classList.toggle('hidden',!proposals);$('#receiptsView').classList.toggle('hidden',!receipts);$('#settingsView').classList.toggle('hidden',!settings);
   $('#rankingView').classList.toggle('hidden',!ranking);
   $('#teamView').classList.toggle('hidden',!team);
   $('#templatesView').classList.toggle('hidden',!templates);
   $('#reportsView').classList.toggle('hidden',!reports);
-  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Sua rotina comercial'],cadences:['Cadências inteligentes','Automação comercial conduzida pelo Orbit'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
+  const titles={today:['Central de ação','O Orbit mostra o que precisa avançar'],pipeline:['Pipeline','Oportunidades em movimento'],clients:['Clientes','Sua base de relacionamentos'],success:['Sucesso e expansão','Retenção e crescimento da carteira'],activities:['Atividades','Sua rotina comercial'],channels:['Central de Canais','Agenda, e-mails e memória comercial'],cadences:['Cadências inteligentes','Automação comercial conduzida pelo Orbit'],orbitCoach:['Orbit IA','Coach comercial e treinamento'],organize:['Cole e organize','Orbit · Assistente local'],ranking:['Ranking','Progresso por percentual da meta'],proposals:['Propostas','Ofertas e decisões'],receipts:['Recebimentos','Da venda ao dinheiro'],reports:['Relatórios','Indicadores essenciais'],settings:['Configurações','Dados e portabilidade'],team:['Equipe e acessos','Papéis e permissões'],templates:['Modelos de funil','Implantação progressiva']};
   $('#pageTitle').textContent=titles[view][0];$('#pageSubtitle').textContent=titles[view][1];
-  $('#newButton').style.display=['orbitCoach','organize','cadences','success','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
+  $('#newButton').style.display=['orbitCoach','organize','channels','cadences','success','ranking','settings','receipts','templates','reports'].includes(view)?'none':'block';
   $('#newButton').textContent={today:'+ Nova oportunidade',pipeline:'+ Nova oportunidade',clients:'+ Novo cliente',activities:'+ Nova atividade',proposals:'+ Nova proposta',team:'+ Novo usuário'}[view]||'+ Novo';
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('.sidebar').classList.remove('open');
@@ -306,6 +309,7 @@ function showView(view){
   if(clients)renderClients();
   if(success)renderCustomerSuccess();
   if(activities)renderActivities();
+  if(channels)renderChannels();
   if(cadences)renderCadences();
   if(proposals)renderProposals();
   if(receipts)renderReceipts();
@@ -319,6 +323,46 @@ function showView(view){
 }
 
 function orbitEmptyState(title,message,className='empty-records'){return `<div class="${className} orbit-empty-state"><span class="orbit-empty-mark">O</span><strong>${title}</strong><p>${message}</p></div>`}
+let pendingChannelRecords=[];
+function getChannelImportHistory(){try{return JSON.parse(localStorage.getItem(CHANNEL_IMPORT_HISTORY_KEY))||[]}catch{return[]}}
+function saveChannelImportHistory(history){localStorage.setItem(CHANNEL_IMPORT_HISTORY_KEY,JSON.stringify(history.slice(0,50)))}
+function existingChannelSourceIds(){return[...getActivities().map(item=>item.sourceUid),...getClients().flatMap(client=>(client.interactions||[]).map(item=>item.sourceUid))].filter(Boolean)}
+function channelRecordDate(record){return record.source==='Calendário'?`${record.date}T${record.time||'09:00'}:00`:record.date}
+function renderChannelImportHistory(){
+  const history=getChannelImportHistory(),count=history.reduce((sum,item)=>sum+Number(item.imported||0),0);$('#channelImportCount').textContent=`${count} ${count===1?'registro':'registros'}`;
+  $('#channelImportHistory').innerHTML=history.length?history.map(item=>`<article><span>${item.calendar?'▦':'✉'}</span><div><strong>${escapeHtml(item.label)}</strong><small>${formatDate(String(item.date).slice(0,10))} · ${escapeHtml(item.actor||'Usuário')}</small></div><b>${item.imported} importado${item.imported===1?'':'s'}</b>${item.skipped?`<em>${item.skipped} repetido${item.skipped===1?'':'s'}</em>`:''}</article>`).join(''):orbitEmptyState('Nenhuma importação ainda','Escolha um arquivo de agenda ou e-mail para começar.','channel-empty');
+}
+function renderChannelPreview(){
+  const target=$('#channelImportPreview');if(!pendingChannelRecords.length){target.innerHTML='';return}
+  const clients=getClients(),options=clients.map(client=>`<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`).join('');
+  target.innerHTML=`<header><div><strong>Revise antes de salvar</strong><small>${pendingChannelRecords.length} ${pendingChannelRecords.length===1?'item reconhecido':'itens reconhecidos'}</small></div><button type="button" id="confirmChannelImport">Importar selecionados</button></header><div>${pendingChannelRecords.map((record,index)=>{const match=record.clientId?clients.find(client=>client.id===record.clientId):null;return `<article class="channel-preview-record"><label class="channel-check"><input type="checkbox" data-channel-select="${index}" ${record.selected?'checked':''}><span></span></label><div class="channel-record-icon">${record.source==='Calendário'?'▦':'✉'}</div><div class="channel-record-copy"><strong>${escapeHtml(record.title)}</strong><small>${formatDate(String(channelRecordDate(record)).slice(0,10))}${record.time?` · ${record.time}`:''} · ${escapeHtml(record.source)}</small><p>${escapeHtml(record.description||record.body||record.from?.email||'Sem descrição')}</p></div><label class="channel-client-match"><small>VINCULAR A</small><select data-channel-client="${index}"><option value="">Escolha o cliente</option>${options}</select><em class="${record.confidence}">${escapeHtml(record.reason)}</em></label></article>`}).join('')}</div>`;
+  pendingChannelRecords.forEach((record,index)=>{const select=target.querySelector(`[data-channel-client="${index}"]`);select.value=record.clientId||'';select.onchange=()=>{record.clientId=select.value;record.reason=select.value?'Confirmado por você':'Escolha o cliente';record.confidence=select.value?'alta':'baixa';record.selected=Boolean(select.value);renderChannelPreview()}});
+  target.querySelectorAll('[data-channel-select]').forEach(input=>input.onchange=()=>{pendingChannelRecords[Number(input.dataset.channelSelect)].selected=input.checked});
+  $('#confirmChannelImport').onclick=confirmChannelImport;
+}
+async function stageChannelFiles(files,type){
+  const clients=getClients(),parsed=[];
+  for(const file of [...files]){const text=await file.text();if(type==='calendar')parsed.push(...parseIcs(text));else parsed.push(parseEml(text))}
+  const existing=existingChannelSourceIds(),fresh=filterNewChannelRecords(parsed,existing),skipped=parsed.length-fresh.length;
+  fresh.forEach(record=>{const match=matchClientForChannel(record,clients);pendingChannelRecords.push({...record,clientId:match.client?.id||'',confidence:match.confidence,reason:match.reason,selected:Boolean(match.client)})});
+  if(skipped)pendingChannelRecords.push({source:'Aviso',title:`${skipped} item(ns) já estavam no CRM`,description:'Itens repetidos não serão importados novamente.',sourceUid:'notice-'+Date.now(),selected:false,notice:true,skipped});
+  renderChannelPreview();
+}
+function confirmChannelImport(){
+  const selected=pendingChannelRecords.filter(record=>record.selected&&record.clientId&&!record.notice),clients=getClients(),activities=getActivities();let calendar=0,email=0;
+  selected.forEach((record,index)=>{const client=clients.find(item=>item.id===record.clientId);if(!client)return;if(record.source==='Calendário'){activities.push({id:`activity-channel-${Date.now()}-${index}`,sourceUid:record.sourceUid,source:'Calendário',title:record.title,type:'Reunião',client:client.name,date:record.date,time:record.time||'09:00',note:[record.description,record.location&&`Local: ${record.location}`].filter(Boolean).join(' · '),owner:appState.currentUser?.name||'',done:false});calendar++}else{client.interactions=client.interactions||[];client.interactions.unshift({id:`interaction-channel-${Date.now()}-${index}`,sourceUid:record.sourceUid,source:'E-mail',title:`E-mail · ${record.title}`,text:(record.body||`Mensagem de ${record.from?.email||'contato'}`).slice(0,4000),date:record.date});addEntityHistory(client,'E-mail importado',record.title,{sourceUid:record.sourceUid});email++}});
+  if(calendar)saveActivities(activities);if(email)saveClients(clients);
+  const skipped=pendingChannelRecords.reduce((sum,item)=>sum+Number(item.skipped||0),0),history=getChannelImportHistory();if(selected.length||skipped){history.unshift({id:'channel-history-'+Date.now(),date:new Date().toISOString(),label:[calendar&&`${calendar} compromisso${calendar===1?'':'s'}`,email&&`${email} e-mail${email===1?'':'s'}`].filter(Boolean).join(' e ')||'Verificação de duplicidade',imported:selected.length,calendar,email,skipped,actor:appState.currentUser?.name||'Usuário'});saveChannelImportHistory(history)}
+  pendingChannelRecords=[];renderChannelPreview();renderChannelImportHistory();renderChannels();
+}
+function renderChannels(){renderChannelImportHistory();renderChannelPreview()}
+function installChannelImports(){
+  const calendar=$('#calendarImport'),email=$('#emailImport'),clear=$('#clearChannelPending');if(!calendar||calendar.dataset.ready)return;calendar.dataset.ready='1';
+  calendar.onchange=async event=>{await stageChannelFiles(event.target.files,'calendar');event.target.value=''};
+  email.onchange=async event=>{await stageChannelFiles(event.target.files,'email');event.target.value=''};
+  clear.onclick=()=>{pendingChannelRecords=[];renderChannelPreview()};renderChannelImportHistory();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installChannelImports);else installChannelImports();
 function contactDatesForClient(clientName){const normalized=String(clientName||'').trim().toLocaleLowerCase('pt-BR'),client=getClients().find(item=>item.name.trim().toLocaleLowerCase('pt-BR')===normalized),dates=[];(client?.interactions||[]).forEach(item=>{if(item.date)dates.push(item.date)});getActivities().filter(item=>item.client.trim().toLocaleLowerCase('pt-BR')===normalized&&item.done).forEach(item=>dates.push(item.completedAt||`${item.date}T${item.time||'12:00'}`));return dates.map(value=>new Date(value)).filter(date=>!Number.isNaN(date.getTime())&&date<=new Date())}
 function daysWithoutContact(clientName,fallbackDate){const dates=contactDatesForClient(clientName);if(dates.length)return daysSince(new Date(Math.max(...dates.map(date=>date.getTime()))));return fallbackDate?daysSince(fallbackDate):null}
 function daysWithoutContactLabel(clientName,fallbackDate){const days=daysWithoutContact(clientName,fallbackDate);return days===null?'Sem contato registrado':days===0?'Contato hoje':`${days} ${days===1?'dia':'dias'} sem contato`}

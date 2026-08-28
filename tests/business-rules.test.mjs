@@ -12,12 +12,44 @@ import {buildCustomerSuccessPortfolio} from '../modules/customer-success.js';
 import {analyzeBuyingCommittee} from '../modules/buying-committee.js';
 import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
 import {buildNextBestActions} from '../modules/next-best-action.js';
+import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '../modules/channel-imports.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
 
 const tests=[];
 function test(name,run){tests.push({name,run})}
+
+test('Fase 5: agenda ICS vira compromisso reconhecível',()=>{
+  const [event]=parseIcs(`BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:meeting-42\nDTSTART:20260828T143000\nDTEND:20260828T153000\nSUMMARY:Diagnóstico comercial\nDESCRIPTION:Revisar cenário e próximos passos\nATTENDEE;CN=Almeida Engenharia:mailto:contato@almeida.com.br\nEND:VEVENT\nEND:VCALENDAR`);
+  assert.equal(event.sourceUid,'meeting-42');
+  assert.equal(event.date,'2026-08-28');
+  assert.equal(event.time,'14:30');
+  assert.equal(event.attendees[0].email,'contato@almeida.com.br');
+});
+
+test('Fase 5: e-mail EML preserva remetente, assunto e mensagem',()=>{
+  const email=parseEml(`From: Joana <joana@cafecerrado.com.br>\nTo: vendas@niviontech.com.br\nSubject: Aprovação da proposta\nMessage-ID: <abc-123@cafecerrado.com.br>\nDate: Thu, 27 Aug 2026 15:00:00 -0300\n\nPodemos seguir com a contratação.`);
+  assert.equal(email.sourceUid,'abc-123@cafecerrado.com.br');
+  assert.equal(email.from.email,'joana@cafecerrado.com.br');
+  assert.equal(email.title,'Aprovação da proposta');
+  assert.match(email.body,/seguir com a contratação/);
+});
+
+test('Fase 5: canal é vinculado ao cliente por e-mail ou domínio corporativo',()=>{
+  const clients=[{id:'client-1',name:'Café do Cerrado',email:'vendas@cafecerrado.com.br'}];
+  const exact=matchClientForChannel({from:{email:'vendas@cafecerrado.com.br'},to:[]},clients);
+  const company=matchClientForChannel({from:{email:'joana@cafecerrado.com.br'},to:[]},clients);
+  assert.equal(exact.client.id,'client-1');
+  assert.equal(exact.confidence,'alta');
+  assert.equal(company.client.id,'client-1');
+  assert.equal(company.reason,'Domínio da empresa');
+});
+
+test('Fase 5: importação não repete identificadores já salvos',()=>{
+  const fresh=filterNewChannelRecords([{sourceUid:'a'},{sourceUid:'b'},{sourceUid:'b'},{sourceUid:'c'}],['a']);
+  assert.deepEqual(fresh.map(item=>item.sourceUid),['b','c']);
+});
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
   const missingAction=validateNegotiation({next:'',nextDate:'2026-08-26'});

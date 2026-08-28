@@ -63,7 +63,7 @@
       <p class="nav-title">VISÃO GERAL</p>
       <nav><button class="active" data-view="today"><i>⌂</i>Dashboard</button></nav>
       <p class="nav-title">COMERCIAL</p>
-      <nav><button data-view="pipeline"><i>◇</i>Pipeline</button><button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button><button data-view="cadences"><i>↻</i>Cadências</button><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button></nav>
+      <nav><button data-view="pipeline"><i>◇</i>Pipeline</button><button data-view="activities"><i>□</i>Atividades <em id="activityBadge">3</em></button><button data-view="channels"><i>⇄</i>Canais</button><button data-view="cadences"><i>↻</i>Cadências</button><button data-view="proposals"><i>▤</i>Propostas</button><button data-view="receipts"><i>R$</i>Recebimentos</button></nav>
       <p class="nav-title">RELACIONAMENTO</p>
       <nav><button data-view="clients"><i>▣</i>Clientes</button><button data-view="success"><i>◎</i>Sucesso e expansão</button></nav>
       <p class="nav-title">INTELIGÊNCIA</p>
@@ -121,6 +121,30 @@
         </div>
         <div class="activities-toolbar"><div class="activity-tabs"><button class="active" data-activity-filter="pending">Pendentes</button><button data-activity-filter="today">Hoje</button><button data-activity-filter="done">Concluídas</button><button data-activity-filter="all">Todas</button></div><label>⌕<input id="activitySearch" placeholder="Buscar atividade ou cliente"></label></div>
         <div class="agenda-layout"><section class="agenda-list" id="activitiesList"></section><aside class="agenda-orbit"><span class="orbit-mini">O</span><p class="overline">ORBIT OBSERVA</p><h3 id="agendaInsight">Sua agenda está organizada.</h3><p id="agendaInsightText">Continue registrando os próximos passos das oportunidades.</p><button data-view="pipeline">Ver oportunidades</button></aside></div>
+      </div>
+      <div class="module-view channels-view hidden" id="channelsView">
+        <div class="module-heading channels-heading"><div><p class="overline">FASE 5 · CONTEXTO CONECTADO</p><h1>Central de Canais</h1><p>Traga compromissos e e-mails para o CRM, revise o vínculo e mantenha a memória do cliente completa.</p></div><div class="module-summary"><small>IMPORTAÇÕES</small><strong id="channelImportCount">0 registros</strong></div></div>
+        <section class="channel-value-strip"><article><span>01</span><div><strong>Importe</strong><small>Arquivos de agenda e e-mail</small></div></article><article><span>02</span><div><strong>Revise</strong><small>Confirme o cliente reconhecido</small></div></article><article><span>03</span><div><strong>Atualize</strong><small>Agenda e memória sem duplicar</small></div></article></section>
+        <div class="channel-layout">
+          <section class="panel-card channel-import-panel">
+            <header><div><p class="overline">IMPORTAÇÃO ASSISTIDA</p><h3>Trazer interações para o CRM</h3><p>Você escolhe os arquivos e aprova cada vínculo antes de salvar.</p></div><span class="channel-private-badge">Privado</span></header>
+            <div class="channel-drop-grid">
+              <label class="channel-drop"><span>▦</span><strong>Agenda</strong><small>Google Agenda ou Outlook em formato .ICS</small><input id="calendarImport" type="file" accept=".ics,text/calendar" multiple><b>Escolher agenda</b></label>
+              <label class="channel-drop"><span>✉</span><strong>E-mails</strong><small>Mensagens exportadas em formato .EML</small><input id="emailImport" type="file" accept=".eml,message/rfc822" multiple><b>Escolher e-mails</b></label>
+            </div>
+            <div id="channelImportPreview" class="channel-import-preview"></div>
+          </section>
+          <aside class="panel-card channel-connections">
+            <header><p class="overline">CONEXÕES DIRETAS</p><h3>Próximas ativações</h3><p>Estas conexões só serão mostradas como ativas após autorização real da empresa.</p></header>
+            <div class="connection-list">
+              <article><span class="google">G</span><div><strong>Google Agenda e Gmail</strong><small>Sincronização automática futura</small></div><em>Requer autorização</em></article>
+              <article><span class="microsoft">M</span><div><strong>Microsoft 365</strong><small>Outlook e calendário corporativo</small></div><em>Requer autorização</em></article>
+              <article><span class="whatsapp">W</span><div><strong>WhatsApp Business</strong><small>API oficial e consentimento</small></div><em>Planejado</em></article>
+            </div>
+            <div class="channel-trust"><span>✓</span><p><strong>Sem conexão fictícia</strong>Importar arquivos já funciona. Automações externas permanecem claramente identificadas.</p></div>
+          </aside>
+        </div>
+        <section class="panel-card channel-history"><header><div><p class="overline">RASTREABILIDADE</p><h3>Histórico de importações</h3></div><button type="button" id="clearChannelPending" class="secondary">Limpar seleção</button></header><div id="channelImportHistory"></div></section>
       </div>
       <div class="module-view orbit-coach-view hidden" id="orbitCoachView">
         <div class="module-heading orbit-coach-heading">
