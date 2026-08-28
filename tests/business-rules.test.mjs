@@ -17,6 +17,7 @@ import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots}
 import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
 import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
 import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit,buildIcpRadar,buildBuyingInfluenceMap,buildConversationIntelligence,buildRevenueLeakMap,buildGrowthMissions} from '../modules/growth-os.js';
+import {buildCommercialTruth,buildFunnelVelocity,buildDailyCommand} from '../modules/commercial-evolution.js';
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
@@ -182,6 +183,28 @@ test('Fase 17: missões combinam riscos e influência em foco semanal',()=>{
   assert.ok(brief.missions.length>=2);
   assert.ok(brief.protectedValue>=50000);
   assert.ok(brief.readiness<100);
+});
+
+test('Fase 18: verdade comercial explica perdas e recuperação',()=>{
+  const truth=buildCommercialTruth([{status:'won',value:20000,leadSource:'Indicação'},{status:'lost',value:15000,leadSource:'Site',lossReason:'Preço ou orçamento',recoveryPotential:'high',lostToCompetitor:'Concorrente X'}]);
+  assert.equal(truth.conversion,50);
+  assert.equal(truth.recoverableValue,15000);
+  assert.equal(truth.lossReasons[0].label,'Preço ou orçamento');
+  assert.equal(truth.missingLossReason,0);
+});
+
+test('Fase 19: velocidade encontra ciclo e gargalo do funil',()=>{
+  const velocity=buildFunnelVelocity([{status:'won',value:10000,createdAt:'2026-08-01T12:00:00Z',wonAt:'2026-08-21T12:00:00Z'},{status:'open',stage:'proposal',value:30000,movedAt:'2026-08-01T12:00:00Z'}],[{id:'lead',label:'Lead'},{id:'proposal',label:'Proposta'},{id:'won',label:'Ganhou'}],'2026-08-27T12:00:00Z');
+  assert.equal(velocity.avgCycle,20);
+  assert.equal(velocity.bottleneck.stage.id,'proposal');
+  assert.equal(velocity.throughput30,10000);
+});
+
+test('Fase 20: comando diário resume mudanças e filas urgentes',()=>{
+  const command=buildDailyCommand({deals:[{id:'d1',title:'Contrato',client:'Empresa A',status:'open',value:20000,updatedAt:'2026-08-27T10:00:00Z'}],activities:[{date:'2026-08-26',done:false}],proposals:[],clients:[],since:'2026-08-27T08:00:00Z',today:'2026-08-27'});
+  assert.equal(command.metrics.changed,1);
+  assert.equal(command.views.find(item=>item.id==='overdue').count,1);
+  assert.equal(command.views.find(item=>item.id==='without-next').count,1);
 });
 
 test('RB-01: negociação ativa exige próxima ação e data',()=>{
