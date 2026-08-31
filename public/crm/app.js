@@ -23,6 +23,16 @@ import {analyzeBuyingCommittee,stakeholderRoles} from './modules/buying-committe
 import {buildMeetingPreparation} from './modules/meeting-preparation.js';
 import {buildNextBestActions} from './modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from './modules/channel-imports.js';
+
+const WORKSPACE_THEME_KEY='niviontech_workspace_theme';
+function getWorkspaceTheme(){return localStorage.getItem(WORKSPACE_THEME_KEY)==='metallic'?'metallic':'offwhite'}
+function applyWorkspaceTheme(theme=getWorkspaceTheme()){
+  const normalized=theme==='metallic'?'metallic':'offwhite';
+  document.documentElement.dataset.workspaceTheme=normalized;
+  document.body?.setAttribute('data-workspace-theme',normalized);
+  return normalized
+}
+applyWorkspaceTheme();
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync,mergeSyncSnapshots} from './modules/sync.js?v=20260828-1';
 
 const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
@@ -765,6 +775,8 @@ function renderSettings(){
   $('#saveCompanyBrand').onclick=()=>{const fantasyName=$('#companyFantasyName').value.trim();if(!fantasyName){message.textContent='Informe o nome fantasia da empresa.';return}saveCompany({...company,fantasyName,logoData:pendingLogo,brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
   const remove=$('#removeCompanyLogo');if(remove)remove.onclick=()=>{saveCompany({...company,fantasyName:$('#companyFantasyName').value.trim()||brandName,logoData:'',brandUpdatedAt:new Date().toISOString()});renderCompanyBrand();renderSettings()};
   const input=$('#staleDealDays');if(input){input.value=getStaleDealDays();input.onchange=()=>{input.value=saveStaleDealDays(input.value);if(appState.currentView==='today')renderTodayActivities()}}
+  const selectedTheme=getWorkspaceTheme();
+  document.querySelectorAll('[data-workspace-theme]').forEach(button=>{const active=button.dataset.workspaceTheme===selectedTheme;button.classList.toggle('active',active);button.setAttribute('aria-checked',String(active));button.onclick=()=>{localStorage.setItem(WORKSPACE_THEME_KEY,button.dataset.workspaceTheme);applyWorkspaceTheme(button.dataset.workspaceTheme);renderSettings()}})
 }
 function renderTeam(){const users=getUsers(),active=users.filter(user=>user.status==='active');$('#activeUsersCount').textContent=`${active.length} ${active.length===1?'usuário':'usuários'}`;$('#teamGrid').innerHTML=users.map(user=>`<article class="team-card"><div class="team-card-top"><span class="user-avatar">${ownerInitials(user.name)}</span><div><h3>${escapeHtml(user.name)}</h3><p>${escapeHtml(user.email)}</p></div><i class="user-state ${user.status==='inactive'?'inactive':''}" title="${user.status==='active'?'Ativo':'Inativo'}"></i></div><div class="team-card-info"><div><small>PERFIL</small><strong>${escapeHtml(user.profile)}</strong></div><div><small>VISIBILIDADE</small><strong>${user.visibility==='all'?'Todo o funil':'Carteira própria'}</strong></div></div><div class="team-card-actions">${user.profile==='Proprietário/Admin'?'<button disabled>Acesso principal</button>':`<button data-toggle-user="${user.id}">${user.status==='active'?'Desativar':'Ativar'}</button>`}</div></article>`).join('');document.querySelectorAll('[data-toggle-user]').forEach(button=>button.onclick=()=>toggleUserStatus(button.dataset.toggleUser));renderGoalsEditor(users)}
 function installGoalsEditor(){if($('#salesGoalsEditor'))return;$('#teamGrid').insertAdjacentHTML('afterend','<section id="salesGoalsEditor" class="sales-goals-editor hidden"><header><div><small>GESTÃO DE PERFORMANCE</small><h2>Metas comerciais</h2><p>Defina objetivos mensais individuais e coletivos.</p></div><label>Período<input id="goalsPeriod" type="month"></label></header><div class="goals-table-head"><span>Responsável</span><span>Valor vendido</span><span>Valor recebido</span><span>Atividades concluídas</span><span>Progresso real</span></div><div id="individualGoalRows"></div><div class="team-goal-title"><span>◎</span><div><strong>Meta coletiva da equipe</strong><small>Objetivo compartilhado do período</small></div></div><div id="teamGoalRow"></div><footer><span>Percentual médio dos indicadores com meta definida.</span><button type="button" id="saveSalesGoals">Salvar metas</button></footer></section>');$('#goalsPeriod').onchange=()=>renderGoalsEditor();$('#saveSalesGoals').onclick=saveSalesGoalForm}
