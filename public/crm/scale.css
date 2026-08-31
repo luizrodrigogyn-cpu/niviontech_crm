@@ -948,3 +948,60 @@ html[data-workspace-theme="darkgray"] #planView .plan-safety-note{color:#d7dce2}
 #planView .plan-cards button{transition:background-color .16s ease,box-shadow .16s ease}
 #planView .plan-cards button:not(:disabled):hover{transform:none}
 @media(prefers-reduced-motion:reduce){#planView .plan-cards article,#planView .plan-cards button{transition:none!important}}
+
+/* Pipeline premium: mesa de comando comercial. */
+#appScreen .pipeline-view{max-width:none!important;padding-inline:clamp(22px,2.6vw,48px)!important}
+#appScreen .pipeline-heading{align-items:stretch!important;gap:24px!important;margin-bottom:20px!important}
+#appScreen .pipeline-heading>div:first-child{display:flex;max-width:680px;justify-content:center;flex-direction:column}
+#appScreen .pipeline-heading>div:first-child>p:last-child{max-width:660px;font-size:13px!important;line-height:1.5!important}
+#appScreen .pipeline-command-summary{display:grid;min-width:min(620px,52vw);grid-template-columns:repeat(3,minmax(150px,1fr));overflow:hidden;border:1px solid #d8e1ea;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(238,243,247,.92));box-shadow:0 12px 30px rgba(7,26,49,.07)}
+#appScreen .pipeline-command-summary article{position:relative;display:grid;align-content:center;gap:4px;min-height:104px;padding:18px 20px;border-left:1px solid #dde4eb}
+#appScreen .pipeline-command-summary article:first-child{border-left:0}
+#appScreen .pipeline-command-summary article:before{position:absolute;right:0;bottom:0;left:0;height:3px;background:#183b60;content:""}
+#appScreen .pipeline-command-summary article:nth-child(2):before{background:#2f8c69}
+#appScreen .pipeline-command-summary article.risk:before{background:#ce5660}
+#appScreen .pipeline-command-summary small{color:#68788a;font-size:10px!important;font-weight:850;letter-spacing:.08em}
+#appScreen .pipeline-command-summary strong{color:#081a30;font-size:22px!important;line-height:1.15}
+#appScreen .pipeline-command-summary span{color:#748191;font-size:11px!important}
+#appScreen .pipeline-toolbar{margin-bottom:14px!important}
+#appScreen .kanban{grid-template-columns:repeat(4,minmax(270px,1fr))!important;gap:14px!important;margin-top:14px!important;padding:2px 2px 18px}
+#appScreen .kanban-column{--stage-accent:#456581;position:relative;min-width:270px!important;padding:12px!important;border-color:#d9e1e8!important;background:linear-gradient(160deg,rgba(239,243,246,.96),rgba(229,234,237,.86))!important}
+#appScreen .kanban-column:nth-child(4n+2){--stage-accent:#346f82}
+#appScreen .kanban-column:nth-child(4n+3){--stage-accent:#8b6c2a}
+#appScreen .kanban-column:nth-child(4n+4){--stage-accent:#2e8065}
+#appScreen .kanban-column:before{position:absolute;top:0;right:14px;left:14px;height:3px;border-radius:0 0 99px 99px;background:var(--stage-accent);opacity:.82;content:""}
+#appScreen .column-header{min-height:54px;padding:9px 4px 12px!important}
+#appScreen .column-header .stage-dot{width:9px;height:9px;background:var(--stage-accent)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--stage-accent) 13%,transparent)}
+#appScreen .column-header h3{font-size:14px!important}
+#appScreen .column-count{font-size:11px!important;font-weight:750}
+#appScreen .column-value{color:#33475d!important;font-size:12px!important;font-weight:800!important}
+#appScreen .deal-card{position:relative;padding:17px!important;border-color:#d9e1e7!important;border-radius:16px!important;background:#fff!important;box-shadow:0 6px 16px rgba(7,26,49,.07)!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
+#appScreen .deal-card:hover{transform:translateY(-2px)!important;border-color:#b9c9d7!important;box-shadow:0 10px 24px rgba(7,26,49,.11)!important}
+#appScreen .deal-card.deal-priority{border-color:#c5a453!important;box-shadow:0 0 0 1px rgba(197,164,83,.3),0 7px 22px rgba(180,139,43,.16)!important}
+#appScreen .deal-card.deal-priority:before{display:block!important;top:13px;left:-1px;width:3px;height:42px;border-radius:0 4px 4px 0;background:#c49a36!important;content:""}
+#appScreen .deal-top h4{font-size:14px!important;line-height:1.35!important}
+#appScreen .deal-client{margin:5px 0 14px!important;font-size:12px!important}
+#appScreen .deal-value{font-size:18px!important}
+#appScreen .deal-temperature{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid transparent;border-radius:99px;font-size:10px!important;font-weight:850;white-space:nowrap}
+#appScreen .deal-temperature i{width:7px;height:7px;border-radius:50%;background:currentColor}
+#appScreen .deal-temperature.health-healthy{border-color:#cce9dc;background:#e8f7f0;color:#237a58}
+#appScreen .deal-temperature.health-attention{border-color:#eedfb8;background:#fff5dc;color:#8d650d}
+#appScreen .deal-temperature.health-risk{border-color:#efced2;background:#fff0f1;color:#a33a45}
+#appScreen .deal-readiness{margin-top:14px!important}
+#appScreen .deal-readiness>span{height:7px!important;background:#e9eef2!important}
+#appScreen .deal-readiness i{background:linear-gradient(90deg,#244d72,#36a278)!important}
+#appScreen .deal-readiness small{font-size:10px!important}
+#appScreen .deal-next{margin-top:14px!important;padding:12px!important;border:1px solid #e3e8ed;border-radius:11px;background:#f7f9fa}
+#appScreen .deal-next small{font-size:9px!important;letter-spacing:.05em}
+#appScreen .deal-next p{margin-top:5px!important;font-size:11px!important;font-weight:750;line-height:1.4!important}
+#appScreen .deal-footer{grid-template-columns:30px minmax(0,1fr) auto!important;margin-top:13px!important}
+#appScreen .deal-footer .owner-avatar{grid-row:1/3}
+#appScreen .deal-owner-name{grid-column:2;grid-row:1;overflow:hidden;color:#263a50;font-size:10px!important;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+#appScreen .deal-footer .contact-age{grid-column:2;grid-row:2;font-size:10px!important}
+#appScreen .deal-footer .move-hint{grid-column:3;grid-row:1/3;align-self:center;font-size:10px!important}
+#appScreen .deal-card.deal-just-moved{animation:pipelineCardArrived .58s cubic-bezier(.22,.85,.32,1)}
+#orbitAttentionTrigger.pipeline-no-recommendation{display:none!important}
+@keyframes pipelineCardArrived{0%{transform:translateY(-12px) scale(.97);opacity:.45}55%{transform:translateY(2px) scale(1.01)}100%{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){#appScreen .deal-card.deal-just-moved{animation:none}}
+@media(max-width:1180px){#appScreen .pipeline-heading{align-items:flex-start!important;flex-direction:column}#appScreen .pipeline-command-summary{width:100%;min-width:0!important}}
+@media(max-width:680px){#appScreen .pipeline-command-summary{grid-template-columns:1fr}#appScreen .pipeline-command-summary article{min-height:82px!important;border-top:1px solid #dde4eb;border-left:0!important}#appScreen .pipeline-command-summary article:first-child{border-top:0}#appScreen .kanban{grid-template-columns:repeat(4,minmax(282px,1fr))!important}}
