@@ -1005,3 +1005,37 @@ html[data-workspace-theme="darkgray"] #planView .plan-safety-note{color:#d7dce2}
 @media(prefers-reduced-motion:reduce){#appScreen .deal-card.deal-just-moved{animation:none}}
 @media(max-width:1180px){#appScreen .pipeline-heading{align-items:flex-start!important;flex-direction:column}#appScreen .pipeline-command-summary{width:100%;min-width:0!important}}
 @media(max-width:680px){#appScreen .pipeline-command-summary{grid-template-columns:1fr}#appScreen .pipeline-command-summary article{min-height:82px!important;border-top:1px solid #dde4eb;border-left:0!important}#appScreen .pipeline-command-summary article:first-child{border-top:0}#appScreen .kanban{grid-template-columns:repeat(4,minmax(282px,1fr))!important}}
+
+/* Cockpit premium da negociação: decisão antes do formulário. */
+#dealDrawer .deal-drawer-panel{width:min(900px,100%)!important;background:linear-gradient(145deg,#f4f6f7,#fbfcfd)!important}
+#dealDrawer .drawer-header{padding:22px 28px!important;border-bottom-color:#dce3e8!important}
+#dealDrawer .drawer-header h2{font-size:26px!important;letter-spacing:-.025em}
+#dealDrawer .deal-cockpit{margin:22px 28px 8px;overflow:hidden;border:1px solid #24425e;border-radius:21px;background:radial-gradient(circle at 85% 0,rgba(66,116,158,.28),transparent 37%),linear-gradient(145deg,#0d2944,#061728 65%,#05111d);color:#fff;box-shadow:0 18px 42px rgba(4,20,35,.2)}
+#dealDrawer .deal-cockpit>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid rgba(255,255,255,.11)}
+#dealDrawer .deal-cockpit>header>div{display:grid;gap:4px}
+#dealDrawer .deal-cockpit>header small{color:#8fa8bd;font-size:9px!important;font-weight:850;letter-spacing:.13em}
+#dealDrawer .deal-cockpit>header strong{font-size:18px!important}
+#dealDrawer .cockpit-health{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid rgba(255,255,255,.13);border-radius:99px;background:rgba(255,255,255,.07);font-size:10px!important;font-weight:800}
+#dealDrawer .cockpit-health i{width:8px;height:8px;border-radius:50%;background:#e0ab46;box-shadow:0 0 0 4px rgba(224,171,70,.12)}
+#dealDrawer .cockpit-health.healthy i{background:#54c796;box-shadow:0 0 0 4px rgba(84,199,150,.12)}
+#dealDrawer .cockpit-health.risk i{background:#ef6c77;box-shadow:0 0 0 4px rgba(239,108,119,.12)}
+#dealDrawer .deal-cockpit-metrics{display:grid;grid-template-columns:repeat(4,1fr)}
+#dealDrawer .deal-cockpit-metrics article{display:grid;align-content:center;gap:5px;min-height:112px;padding:18px 20px;border-right:1px solid rgba(255,255,255,.1)}
+#dealDrawer .deal-cockpit-metrics article:last-child{border-right:0}
+#dealDrawer .deal-cockpit-metrics small{color:#8fa8bd;font-size:9px!important;font-weight:850;letter-spacing:.08em}
+#dealDrawer .deal-cockpit-metrics strong{overflow:hidden;font-size:19px!important;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+#dealDrawer .deal-cockpit-metrics span{overflow:hidden;color:#b4c2cf;font-size:10px!important;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
+#dealDrawer .deal-cockpit-metrics article.risk strong,#dealDrawer .deal-cockpit-metrics article.risk span{color:#ffb8bd}
+#dealDrawer .deal-cockpit-signals{display:flex;gap:8px;padding:14px 20px;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09);flex-wrap:wrap}
+#dealDrawer .deal-cockpit-signals span{padding:6px 9px;border:1px solid rgba(255,255,255,.1);border-radius:99px;background:rgba(255,255,255,.05);color:#b9c6d1;font-size:9px!important;font-weight:700}
+#dealDrawer .deal-cockpit-signals .ready{border-color:rgba(80,190,143,.2);background:rgba(54,154,111,.12);color:#8ee0bb}
+#dealDrawer .deal-cockpit-signals .missing{border-color:rgba(235,110,120,.22);background:rgba(190,61,75,.13);color:#ffafb6}
+#dealDrawer .deal-cockpit>footer{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:15px 20px 20px}
+#dealDrawer .deal-cockpit>footer button{min-height:40px;padding:9px 11px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;font-size:10px!important;font-weight:800;cursor:pointer;transition:background .16s ease,border-color .16s ease}
+#dealDrawer .deal-cockpit>footer button:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.12)}
+#dealDrawer .deal-cockpit>footer button.primary{border-color:#fff;background:#fff;color:#07182a}
+#dealDrawer #dealStageTrack{margin-inline:27px;width:calc(100% - 54px)!important;padding-top:12px!important}
+#dealDrawer .deal-narrative{margin-inline:28px!important}
+#dealDrawer .deal-detail-section{margin-inline:28px!important}
+@media(max-width:720px){#dealDrawer .deal-cockpit{margin-inline:14px}#dealDrawer .deal-cockpit-metrics{grid-template-columns:1fr 1fr}#dealDrawer .deal-cockpit-metrics article{min-height:96px;border-bottom:1px solid rgba(255,255,255,.1)}#dealDrawer .deal-cockpit>footer{grid-template-columns:1fr 1fr}#dealDrawer #dealStageTrack{margin-inline:14px;width:calc(100% - 28px)!important}#dealDrawer .deal-narrative,#dealDrawer .deal-detail-section{margin-inline:14px!important}}
+@media(max-width:460px){#dealDrawer .deal-cockpit>header{align-items:flex-start;flex-direction:column}#dealDrawer .deal-cockpit-metrics{grid-template-columns:1fr}#dealDrawer .deal-cockpit-metrics article{border-right:0}#dealDrawer .deal-cockpit>footer{grid-template-columns:1fr}}
