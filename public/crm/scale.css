@@ -206,6 +206,42 @@
   }
 }
 
+/* Radar de ICP: conteúdo operacional precisa continuar legível sem depender de zoom. */
+#appScreen .growth-os-view .intelligence-card header > span {
+  width: 34px !important;
+  height: 34px !important;
+  font-size: 10px !important;
+}
+
+#appScreen .growth-os-view .intelligence-card small {
+  color: #526273 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+#appScreen .growth-os-view .intelligence-card h3 {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+#appScreen .growth-os-view .intelligence-card header > strong {
+  font-size: 24px !important;
+}
+
+#appScreen .growth-os-view .intelligence-card footer {
+  gap: 12px !important;
+  color: #526273 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+#appScreen .growth-os-view .intelligence-card footer b {
+  color: #0d3556 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
 /* Growth OS: menos densidade, mais leitura e uso real da altura disponível. */
 @media (min-width: 1100px) {
   #appScreen .growth-os-view .growth-tabs-extended {
