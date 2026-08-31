@@ -221,12 +221,8 @@
     border-bottom: 1px solid #e1e7ec !important;
   }
 
-  #appScreen .growth-os-view .growth-tabs-extended button > span {
-    display: none !important;
-  }
-
   #appScreen .growth-os-view .growth-tabs-extended strong {
-    font-size: 12px !important;
+    font-size: 14px !important;
     line-height: 1.25 !important;
   }
 

@@ -7,6 +7,11 @@ const phaseCatalog=[
   {name:'Decisão',goal:'Tratar riscos, alinhar condições e conquistar um compromisso claro.',criteria:['decisionMaker','budget','objection','next','nextDate'],questions:['O que ainda impede uma decisão segura?','Qual é o processo interno para aprovação?'],action:'Conduzir reunião de decisão e próximo compromisso'}
 ];
 const fieldLabels={owner:'responsável',next:'próxima ação',nextDate:'data',pain:'dor principal',decisionMaker:'decisor',successCriteria:'critério de sucesso',budget:'orçamento',objection:'objeção'};
+export function formatMissingPlaybookCriteria(missing=[]){
+  const labels=missing.map(field=>fieldLabels[field]||field).filter(Boolean);
+  if(labels.length<2)return labels[0]||'';
+  return `${labels.slice(0,-1).join(', ')} e ${labels.at(-1)}`;
+}
 export function createPlaybookFromIcp({stages=[],icp={},version=1}={}){
   const commercial=stages.filter(stage=>!outcomeStages.has(stage.id)),pains=cleanList(icp.pains),objections=cleanList(icp.objections),proofs=cleanList(icp.proofs),segments=cleanList(icp.segments),products=cleanList(icp.products);
   const guidedStages=commercial.map((stage,index)=>{const catalog=phaseCatalog[Math.min(phaseCatalog.length-1,Math.floor(index/Math.max(1,commercial.length)*phaseCatalog.length))];return{stageId:stage.id,stageLabel:stage.label,phase:catalog.name,goal:catalog.goal,criteria:[...catalog.criteria],questions:[...catalog.questions,...pains.slice(0,1).map(pain=>`Como ${pain.toLowerCase()} afeta o resultado da empresa?`)],action:catalog.action,objections:(objections.length?objections:['Preço','Prioridade']).slice(0,3).map((trigger,itemIndex)=>({trigger,response:itemIndex===0&&proofs[0]?`Retome o impacto diagnosticado e use esta prova: ${proofs[0]}`:'Acolha a preocupação, investigue a causa e confirme o próximo compromisso.'}))}});

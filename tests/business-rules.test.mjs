@@ -15,7 +15,7 @@ import {buildMeetingPreparation} from '../modules/meeting-preparation.js';
 import {buildNextBestActions} from '../modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from '../modules/channel-imports.js';
 import {buildForecastGovernance,createForecastSnapshot,compareForecastSnapshots} from '../modules/forecast-governance.js';
-import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,playbookAdoption} from '../modules/playbooks.js';
+import {createPlaybookFromIcp,evaluateDealAgainstPlaybook,formatMissingPlaybookCriteria,playbookAdoption} from '../modules/playbooks.js';
 import {createMutualActionPlan,mutualPlanProgress,toggleMutualMilestone,mutualPlanPlainText} from '../modules/mutual-action-plans.js';
 import {buildDealScorecard,runAutomationRules,buildCoachingBrief,buildRevenueCockpit,buildIcpRadar,buildBuyingInfluenceMap,buildConversationIntelligence,buildRevenueLeakMap,buildGrowthMissions} from '../modules/growth-os.js';
 import {buildCommercialTruth,buildFunnelVelocity,buildDailyCommand} from '../modules/commercial-evolution.js';
@@ -86,6 +86,17 @@ test('Nova Fase 7: DNA comercial gera playbook alinhado ao segmento',()=>{
   assert.equal(playbook.stages.length,3);
   assert.match(playbook.stages[0].questions.at(-1),/falta de previsibilidade/i);
   assert.match(playbook.stages[0].objections[0].response,/30% de ganho/);
+});
+
+test('Checklist da negociação mostra somente os campos realmente ausentes',()=>{
+  const playbook={stages:[{stageId:'diagnosis',criteria:['pain','decisionMaker','budget']}]};
+  const evaluation=evaluateDealAgainstPlaybook({stage:'diagnosis',pain:'Baixa previsibilidade',budget:12000},playbook);
+  assert.deepEqual(evaluation.missing,['decisor']);
+  assert.equal(formatMissingPlaybookCriteria(evaluation.missing),'decisor');
+});
+
+test('Checklist traduz e combina várias pendências em português',()=>{
+  assert.equal(formatMissingPlaybookCriteria(['pain','decisionMaker','budget']),'dor principal, decisor e orçamento');
 });
 
 test('Nova Fase 7: prontidão expõe exatamente o que falta para avançar',()=>{
