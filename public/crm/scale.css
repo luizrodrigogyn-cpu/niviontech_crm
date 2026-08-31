@@ -222,10 +222,7 @@
   }
 
   #appScreen .growth-os-view .growth-tabs-extended button > span {
-    flex: 0 0 auto;
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 10px !important;
+    display: none !important;
   }
 
   #appScreen .growth-os-view .growth-tabs-extended strong {
