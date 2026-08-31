@@ -1129,6 +1129,53 @@ body.orbit-cinematic #orbitContextCard .orbit-context-mark{box-shadow:0 0 0 7px 
   -webkit-overflow-scrolling: touch;
 }
 
+/* No Pipeline existe uma única rolagem vertical: a área de trabalho. */
+body[data-current-view="pipeline"] #appScreen .workspace {
+  height: calc(100vh - 36px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body[data-current-view="pipeline"] #appScreen .topbar {
+  position: sticky;
+  z-index: 25;
+  top: 0;
+}
+
+body[data-current-view="pipeline"] #appScreen .pipeline-view {
+  height: auto !important;
+  min-height: calc(100vh - 112px);
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+  touch-action: auto;
+}
+
+body[data-current-view="pipeline"] #appScreen .workspace {
+  scrollbar-width: thin;
+  scrollbar-color: #8799aa transparent;
+}
+
+body[data-current-view="pipeline"] #appScreen .workspace::-webkit-scrollbar {
+  width: 10px;
+}
+
+body[data-current-view="pipeline"] #appScreen .workspace::-webkit-scrollbar-thumb {
+  min-height: 34px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #8799aa;
+  background-clip: padding-box;
+}
+
+body[data-current-view="pipeline"] #appScreen .workspace::-webkit-scrollbar-thumb:hover {
+  background: #647a8e;
+  background-clip: padding-box;
+}
+
 #appScreen .kanban-scroll {
   width: 100%;
   max-width: 100%;
@@ -1229,6 +1276,9 @@ body.orbit-cinematic #orbitContextCard .orbit-context-mark{box-shadow:0 0 0 7px 
 }
 
 @media(max-width:720px) {
+  body[data-current-view="pipeline"] #appScreen .workspace {
+    height: 100vh;
+  }
   #appScreen .kanban-scroll {
     margin-inline: -2px;
     padding-bottom: 12px;
