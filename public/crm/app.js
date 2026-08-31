@@ -492,6 +492,8 @@ function daysWithoutContact(clientName,fallbackDate){const dates=contactDatesFor
 function daysWithoutContactLabel(clientName,fallbackDate){const days=daysWithoutContact(clientName,fallbackDate);return days===null?'Sem contato registrado':days===0?'Contato hoje':`${days} ${days===1?'dia':'dias'} sem contato`}
 function assignLeadByRoundRobin(deal){const eligible=getUsers().filter(user=>user.status==='active'&&['Colaborador comercial','SDR'].includes(user.profile));if(eligible.length<2)return null;const key='niviontech_lead_round_robin_last',lastId=localStorage.getItem(key),lastIndex=eligible.findIndex(user=>user.id===lastId),selected=eligible[(lastIndex+1)%eligible.length];deal.owner=selected.name;deal.ownerRole=selected.profile;deal.distributionReason=`Foi para ${selected.name} porque é a vez ${selected.profile==='SDR'?'do SDR':'do colaborador'} no rodízio.`;deal.distributedAt=new Date().toISOString();localStorage.setItem(key,selected.id);addEntityHistory(deal,'Lead distribuído automaticamente',deal.distributionReason,{assignedUserId:selected.id});return selected}
 function renderPipeline(search=''){
+  const pipelineView=$('#pipelineView'),kanbanScroller=pipelineView?.querySelector('.kanban-scroll');
+  const preservedScroll={top:pipelineView?.scrollTop||0,left:kanbanScroller?.scrollLeft||0};
   installPipelineExportButton();
   const deals=dealsVisibleToCurrentUser(getDeals());
   const focused=appState.activePipelineView?filterDealsForView(deals,appState.activePipelineView,{today:todayISO(),owner:appState.currentUser?.name||'',stages:pipelineStages}):deals;
@@ -519,11 +521,17 @@ function renderPipeline(search=''){
   }).join('');
   const orbitTrigger=$('#orbitAttentionTrigger');if(orbitTrigger)orbitTrigger.classList.toggle('pipeline-no-recommendation',!riskDeals.length);
   bindDragAndDrop();
+  requestAnimationFrame(()=>{
+    if(pipelineView&&!pipelineView.classList.contains('hidden'))pipelineView.scrollTop=preservedScroll.top;
+    if(kanbanScroller)kanbanScroller.scrollLeft=preservedScroll.left;
+  });
 }
 function renderPipelineValueSummary(deals){
   let summary=$('#pipelineValueSummary');
+  const scroller=document.querySelector('#pipelineView .kanban-scroll');
+  if(summary&&scroller?.contains(summary))scroller.insertAdjacentElement('beforebegin',summary);
   if(!summary){
-    $('#kanbanBoard').insertAdjacentHTML('beforebegin','<section id="pipelineValueSummary" class="pipeline-value-summary" aria-label="Resumo financeiro do funil"></section>');
+    scroller.insertAdjacentHTML('beforebegin','<section id="pipelineValueSummary" class="pipeline-value-summary" aria-label="Resumo financeiro do funil"></section>');
     summary=$('#pipelineValueSummary');
   }
   const groups=[
