@@ -1109,3 +1109,129 @@ body.orbit-cinematic #orbitContextCard .orbit-context-mark{box-shadow:0 0 0 7px 
 @media(max-width:1120px){#proposalsView .close-command,#closingPlansView .close-command{grid-template-columns:1fr}.close-command-metrics{border:0;border-top:1px solid rgba(255,255,255,.1)}.close-command>button{justify-self:stretch}.closing-command-premium .close-command-metrics{border-top:1px solid rgba(255,255,255,.1)}#reportsView .executive-story{grid-template-columns:auto 1fr}.executive-story-action{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.1);border-left:0}}
 @media(max-width:660px){.close-command-metrics{grid-template-columns:1fr}.close-command-metrics article{min-height:82px;border-right:0;border-bottom:1px solid rgba(255,255,255,.09)}#reportsView .executive-story{grid-template-columns:1fr}.executive-story-orbit{width:auto;border-right:0;border-bottom:1px solid rgba(255,255,255,.1)}.executive-story-action{grid-column:auto}}
 @media(prefers-reduced-motion:reduce){body.orbit-cinematic #orbitAttentionPanel:before,body.orbit-cinematic #orbitContextCard .orbit-context-mark{animation:none}.close-command>button{transition:none}}
+
+/* Rolagem previsível: cada eixo pertence ao contêiner correto. */
+#appScreen .pipeline-view,
+#appScreen .dashboard,
+#appScreen .clients-view,
+#appScreen .activities-view,
+#appScreen .module-view {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  scroll-behavior: auto !important;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+#appScreen .kanban-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 14px;
+  overscroll-behavior-x: contain;
+  scroll-behavior: auto;
+  scrollbar-gutter: stable;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+#appScreen .kanban-scroll:focus-visible {
+  outline: 3px solid rgba(52,125,183,.2);
+  outline-offset: 3px;
+  border-radius: 16px;
+}
+
+#appScreen .kanban-scroll .kanban {
+  min-width: max(1080px,100%);
+}
+
+#appScreen .sidebar {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#appScreen .sidebar .guided-nav {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+#appScreen .sidebar-footer {
+  flex: 0 0 auto;
+}
+
+.drawer-panel,
+.orbit-attention-list,
+.premium-select-menu,
+.growth-tabs-extended {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-card {
+  margin-block: auto;
+}
+
+/* Barra discreta, nítida e com área de arraste confortável. */
+#appScreen :where(.pipeline-view,.kanban-scroll,.dashboard,.clients-view,.activities-view,.module-view,.guided-nav,.drawer-panel,.orbit-attention-list,.premium-select-menu,.growth-tabs-extended) {
+  scrollbar-width: thin;
+  scrollbar-color: #8799aa transparent;
+}
+
+#appScreen :where(.pipeline-view,.kanban-scroll,.dashboard,.clients-view,.activities-view,.module-view,.guided-nav,.drawer-panel,.orbit-attention-list,.premium-select-menu,.growth-tabs-extended)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+#appScreen :where(.pipeline-view,.kanban-scroll,.dashboard,.clients-view,.activities-view,.module-view,.guided-nav,.drawer-panel,.orbit-attention-list,.premium-select-menu,.growth-tabs-extended)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#appScreen :where(.pipeline-view,.kanban-scroll,.dashboard,.clients-view,.activities-view,.module-view,.guided-nav,.drawer-panel,.orbit-attention-list,.premium-select-menu,.growth-tabs-extended)::-webkit-scrollbar-thumb {
+  min-width: 34px;
+  min-height: 34px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #8799aa;
+  background-clip: padding-box;
+}
+
+#appScreen :where(.pipeline-view,.kanban-scroll,.dashboard,.clients-view,.activities-view,.module-view,.guided-nav,.drawer-panel,.orbit-attention-list,.premium-select-menu,.growth-tabs-extended)::-webkit-scrollbar-thumb:hover {
+  background: #647a8e;
+  background-clip: padding-box;
+}
+
+#appScreen .sidebar .guided-nav {
+  scrollbar-color: rgba(189,211,235,.5) transparent;
+}
+
+#appScreen .sidebar .guided-nav::-webkit-scrollbar-thumb {
+  background: rgba(189,211,235,.5);
+  background-clip: padding-box;
+}
+
+@media(max-width:720px) {
+  #appScreen .kanban-scroll {
+    margin-inline: -2px;
+    padding-bottom: 12px;
+  }
+}
