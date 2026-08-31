@@ -188,6 +188,52 @@ button:not(.icon-button):not(.edit-card-title):not(.temperature-trigger),input,s
 #organizeDraft textarea[name="summary"]{min-height:230px;white-space:pre-wrap;line-height:1.55}
 @media(max-width:900px){.pipeline-value-summary{grid-template-columns:repeat(2,minmax(120px,1fr))}}@media(max-width:520px){.pipeline-value-summary{grid-template-columns:1fr 1fr}.pipeline-value-card{padding:10px}.pipeline-value-card strong{font-size:14px}#orbitAttentionTrigger.orbit-attention-trigger{width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important}#orbitAttentionTrigger .orbit-attention-orb{width:46px!important;height:46px!important}.orbit-attention-item{grid-template-columns:1fr}.orbit-attention-dismiss{border-top:1px solid rgba(31,50,89,.08)!important;border-left:0!important}.global-search-trigger{right:78px!important}}
 .brand-panel>.brand-logo-full{padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}.brand-panel>.brand-logo-full .brand-symbol{flex-basis:94px;width:94px;height:94px;border:0;border-radius:0;background:transparent;box-shadow:none}.brand-panel>.brand-logo-full .brand-symbol img{width:141px;height:94px;left:-24px;top:0;object-fit:cover;object-position:center}
+
+/* Escala desktop ampla: usa a tela disponível sem transformar o CRM em miniatura. */
+@media (min-width:1280px){
+  #appScreen.app{grid-template-columns:250px minmax(0,1fr)!important;padding:10px!important}
+  #appScreen .sidebar{width:250px!important;padding:16px 12px!important}
+  #appScreen .sidebar nav button{min-height:43px!important;padding:9px 12px!important;font-size:13px!important}
+  #appScreen .sidebar .nav-title{font-size:8.5px!important}
+  #appScreen .sidebar-footer .settings,#appScreen .logout-button{font-size:12px!important}
+  #appScreen .sidebar-footer .profile strong{font-size:11px!important}
+  #appScreen .sidebar-footer .profile small{font-size:8.5px!important}
+  #appScreen .topbar{min-height:74px!important;padding:11px 22px!important}
+  #appScreen .topbar-search{min-height:46px!important;padding-inline:18px!important;font-size:13px!important}
+  #appScreen .topbar-orbit{min-height:46px!important;padding-inline:16px!important;font-size:14px!important}
+  #appScreen .dashboard,#appScreen .pipeline-view,#appScreen .clients-view,#appScreen .activities-view,#appScreen .module-view{
+    width:100%;max-width:1500px!important;padding:40px clamp(30px,3vw,54px) 68px!important
+  }
+  #appScreen .welcome{gap:32px!important;margin-bottom:24px!important}
+  #appScreen .welcome h1{margin-top:9px!important;font-size:clamp(38px,2.55vw,48px)!important}
+  #appScreen .welcome>div:first-child>p:last-child{font-size:14px!important;line-height:1.55!important}
+  #appScreen .date-card{min-width:290px!important;min-height:150px!important;padding:22px 24px!important}
+  #appScreen .date-card #todayDate{font-size:clamp(29px,2.1vw,38px)!important}
+  #appScreen .metrics{gap:16px!important;margin-bottom:22px!important}
+  #appScreen .metrics article{min-height:154px!important;padding:23px!important}
+  #appScreen .metrics article small{font-size:11px!important}
+  #appScreen .metrics article strong{font-size:27px!important}
+  #appScreen .metrics article span{font-size:12px!important}
+  #appScreen .value-proof-strip{margin-bottom:22px!important;padding:21px!important;border-radius:18px!important}
+  #appScreen .value-proof-strip>header strong{font-size:15px!important}
+  #appScreen .value-proof-strip article{min-height:64px!important;padding:13px!important}
+  #appScreen .value-proof-strip article strong{font-size:18px!important}
+  #appScreen .value-proof-strip article small{font-size:9px!important}
+  #appScreen .orbit-execution{min-height:126px!important;grid-template-columns:58px 1fr auto!important;gap:18px!important;margin-bottom:22px!important;padding:22px 26px!important}
+  #appScreen .orbit-execution-mark{width:56px!important;height:56px!important}
+  #appScreen .orbit-execution-copy h2{font-size:21px!important}
+  #appScreen .orbit-execution-copy>p{font-size:11px!important}
+  #appScreen .orbit-execution-copy>div{font-size:10px!important}
+  #appScreen .orbit-execution>button{padding:14px 19px!important;font-size:11px!important}
+  #appScreen .dashboard-grid{grid-template-columns:minmax(0,1.2fr) minmax(410px,1fr)!important;gap:18px!important}
+  #appScreen .panel>header{padding:20px 22px!important}
+  #appScreen .panel h3{font-size:17px!important}
+  #appScreen .panel header p{font-size:12px!important}
+  #appScreen .task{grid-template-columns:42px 1fr auto!important;padding:18px 22px!important}
+  #appScreen .task strong,#appScreen .recommendation strong{font-size:14px!important}
+  #appScreen .task p,#appScreen .recommendation p,#appScreen .task time{font-size:12px!important}
+  #appScreen .recommendation{padding:19px 22px!important}
+}
 #authScreen .access-panel{background:radial-gradient(circle at 25% 18%,rgba(255,255,255,.82),transparent 38%),#f3f0e9!important}#authScreen .access-card{border:1px solid rgba(224,218,207,.72);background:#faf7f1!important;box-shadow:0 28px 70px rgba(20,24,34,.12)}#authScreen .brand-panel{background:radial-gradient(circle at 80% 30%,rgba(33,67,112,.32),transparent 34%),radial-gradient(circle at 70% 80%,rgba(18,47,84,.28),transparent 40%),linear-gradient(135deg,#0b0d12 0%,#101722 48%,#0a2342 100%)!important}#authScreen .brand-panel article,#authScreen .brand-panel [class*="float"],#authScreen .brand-panel [class*="feature"],#authScreen .brand-panel [class*="insight"]{border-color:rgba(255,255,255,.72)!important;background:rgba(248,245,238,.92)!important;box-shadow:0 18px 44px rgba(0,0,0,.28)!important;backdrop-filter:blur(18px) saturate(125%)}
 .brand-panel>.brand-logo-full .brand-symbol img{filter:brightness(0) invert(1)}
 
