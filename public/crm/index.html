@@ -14,7 +14,7 @@
   <style>.sidebar nav .menu-new-badge{display:inline-flex!important;align-items:center;margin-left:auto;padding:3px 7px;border:1px solid rgba(174,190,219,.16);border-radius:99px;background:rgba(145,162,196,.18);color:#c3cde1;font-size:8px!important;font-style:normal;font-weight:800;letter-spacing:.08em;line-height:1.2}</style>
   <style>@media(min-width:761px){#todayView .welcome{align-items:flex-start!important}}</style>
   <style>@media(min-width:721px){#appScreen.app{align-items:start}#appScreen .sidebar{top:0!important;align-self:start;margin-top:0!important;padding-top:14px}#appScreen .sidebar>.logo{height:62px}#appScreen .workspace{align-self:start}}</style>
-  <link rel="stylesheet" href="scale.css?v=20260831-17">
+  <link rel="stylesheet" href="scale.css?v=20260831-18">
 </head>
 <body class="app-booting">
   <main id="authScreen" class="auth-layout">
@@ -95,6 +95,7 @@
       <div class="dashboard" id="todayView">
         <div class="welcome"><div><p class="overline">ORBIT · CONDUÇÃO COMERCIAL</p><h1 id="welcomeTitle">O que precisa avançar agora</h1><p>Prioridades explicadas por risco, impacto financeiro e próximo passo.</p></div><div class="date-card" style="display:flex;flex-direction:column;align-items:flex-start"><small id="todayWeekday" style="display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase"></small><strong id="todayDate" style="display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance"></strong><div id="dateCardUser" style="width:100%;margin-top:15px;padding-top:12px;border-top:1px solid rgba(69,92,138,.12);color:var(--ink);font-size:11px;font-weight:800"></div></div></div>
         <section id="roleFocus" class="role-focus"></section>
+        <section id="todayCommandStrip" class="today-command-strip" aria-label="Agenda inteligente do dia"></section>
         <section class="metrics">
           <article class="metric-emphasis"><small>Precisa de ação</small><strong id="todayPendingCount">3</strong><span id="todayActivityHint">3 prioridades</span></article>
           <article><small>Pipeline aberto</small><strong id="todayPipelineValue">R$ 27.400</strong><span><b id="todayOpenDeals">4</b> oportunidades</span></article>
@@ -416,6 +417,7 @@
     <div class="drawer-backdrop" data-close-client-drawer></div>
     <aside class="drawer-panel client-drawer-panel">
       <header class="drawer-header"><div><p class="overline">CLIENTE 360°</p><h2 id="drawerClientName">Empresa</h2><p id="drawerClientSegment">Segmento</p></div><button data-close-client-drawer>×</button></header>
+      <section id="clientCommandCenter" class="client-command-center" aria-label="Comando da conta"></section>
       <section class="client-profile-card"><span class="company-avatar" id="drawerClientInitial">E</span><div><span id="drawerClientStatus" class="client-status">Cliente</span><h3 id="drawerClientLocation">Cidade</h3><p id="drawerClientContact">Telefone · E-mail</p></div></section>
       <section class="client-360-metrics"><article><small>OPORTUNIDADES</small><strong id="clientDealsCount">0</strong></article><article><small>VALOR EM NEGOCIAÇÃO</small><strong id="clientDealsValue">R$ 0</strong></article><article><small>ATIVIDADES PENDENTES</small><strong id="clientActivitiesCount">0</strong></article></section>
       <form id="clientStrategyForm" class="deal-detail-section client-strategy-form"><div class="detail-section-title"><h3>Mapa do relacionamento</h3><small>Contexto para toda a equipe</small></div><div class="detail-form-grid"><label>Contato principal<input id="drawerClientMainContact" placeholder="Nome e cargo"></label><label>Decisor principal<input id="drawerClientDecisionMaker" placeholder="Quem aprova"></label><label>Responsável pela conta<input id="drawerClientAccountOwner" placeholder="Pessoa da sua equipe"></label><label>Aderência ao ICP<select id="drawerClientIcpFit"><option value="unknown">Não avaliada</option><option value="high">Alta aderência</option><option value="medium">Média aderência</option><option value="low">Baixa aderência</option></select></label><label>Próxima renovação<input id="drawerClientRenewalDate" type="date"></label><label>Satisfação atual<select id="drawerClientSatisfaction"><option value="unknown">Não avaliada</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select></label><label class="full-field">Objetivo do cliente<input id="drawerClientGoal" placeholder="Resultado que esta empresa busca"></label><label class="full-field">Observações estratégicas<input id="drawerClientStrategicNotes" placeholder="Contexto importante para próximas conversas"></label></div><button type="submit" class="secondary wide">Salvar mapa do relacionamento</button></form>
@@ -429,6 +431,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-  <script type="module" src="app.js?v=20260831-11"></script>
+  <script type="module" src="app.js?v=20260831-12"></script>
 </body>
 </html>
