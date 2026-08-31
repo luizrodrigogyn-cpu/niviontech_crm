@@ -205,3 +205,128 @@
     padding: 21px 24px !important;
   }
 }
+
+/* Legibilidade: preserva Manrope e a hierarquia, elevando apenas microtextos. */
+@media (min-width: 901px) {
+  #appScreen .overline {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen .sidebar .guided-nav-children button {
+    min-height: 38px !important;
+    font-size: 12.5px !important;
+  }
+
+  #appScreen .crm-support-contact strong,
+  #appScreen .plan-evolution-button strong {
+    font-size: 12px !important;
+  }
+
+  #appScreen .crm-support-contact small,
+  #appScreen .plan-evolution-button small {
+    font-size: 9.5px !important;
+  }
+
+  #appScreen .settings {
+    font-size: 13px !important;
+  }
+
+  #appScreen .activities-heading h1,
+  #appScreen .pipeline-heading h1,
+  #appScreen .clients-heading h1,
+  #appScreen .module-heading h1 {
+    font-size: 36px !important;
+    line-height: 1.08 !important;
+  }
+
+  #appScreen .activities-heading > div > p:last-child,
+  #appScreen .pipeline-heading > div > p:last-child,
+  #appScreen .clients-heading > div > p:last-child,
+  #appScreen .module-heading > div > p:last-child {
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+  }
+
+  #appScreen .activities-summary small,
+  #appScreen .module-summary small,
+  #appScreen .pipeline-summary small,
+  #appScreen .clients-summary small {
+    font-size: 10px !important;
+  }
+
+  #appScreen .activities-summary strong,
+  #appScreen .module-summary strong,
+  #appScreen .pipeline-summary strong,
+  #appScreen .clients-summary strong {
+    font-size: 18px !important;
+  }
+
+  #appScreen .activity-tabs button {
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+  }
+
+  #appScreen .activities-toolbar > label,
+  #appScreen .activities-toolbar input {
+    font-size: 13px !important;
+  }
+
+  #appScreen .agenda-day {
+    font-size: 11px !important;
+  }
+
+  #appScreen .agenda-item {
+    min-height: 88px !important;
+    padding: 18px 20px !important;
+  }
+
+  #appScreen .agenda-item strong {
+    font-size: 14px !important;
+  }
+
+  #appScreen .agenda-item p,
+  #appScreen .agenda-item time {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  #appScreen .activity-type {
+    padding: 4px 7px !important;
+    font-size: 9.5px !important;
+  }
+
+  #appScreen .activity-actions > div button {
+    font-size: 12px !important;
+  }
+
+  #appScreen .agenda-orbit h3 {
+    font-size: 18px !important;
+  }
+
+  #appScreen .agenda-orbit > p:last-of-type {
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+  }
+
+  #appScreen .agenda-orbit button {
+    font-size: 13px !important;
+  }
+
+  #appScreen .panel-card > header p,
+  #appScreen .panel-card > p,
+  #appScreen .closing-plan-explainer p,
+  #appScreen .deal-narrative-grid p,
+  #appScreen .catalog-item p,
+  #appScreen .catalog-item small,
+  #appScreen .client-product-item p,
+  #appScreen .client-product-item small {
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+  }
+
+  #appScreen .premium-select-trigger span,
+  #appScreen .premium-select-option span {
+    font-size: 13px !important;
+  }
+}
