@@ -330,3 +330,230 @@
     font-size: 13px !important;
   }
 }
+
+/* Régua tipográfica global do produto.
+   Nenhuma informação operacional deve depender de microtexto para ser lida. */
+@media (min-width: 901px) {
+  #appScreen p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  #appScreen small {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen label {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  #appScreen time,
+  #appScreen em:not(.menu-new-badge) {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  #appScreen input,
+  #appScreen select,
+  #appScreen textarea {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen button {
+    font-size: 12px;
+  }
+
+  #appScreen .overline,
+  #appScreen [class*="section-label"],
+  #appScreen [class*="eyebrow"] {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen .activity-type,
+  #appScreen [class*="badge"],
+  #appScreen [class*="status"] {
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  #appScreen .closing-plan-item strong,
+  #appScreen .closing-target strong,
+  #appScreen .closing-milestones article strong,
+  #appScreen .deal-card strong,
+  #appScreen .client-card strong,
+  #appScreen .record-card strong,
+  #appScreen .catalog-item strong,
+  #appScreen .client-product-item strong,
+  #appScreen .task strong,
+  #appScreen .agenda-item strong,
+  #appScreen .recommendation strong,
+  #appScreen .orbit-story-card strong,
+  #appScreen .daily-events strong,
+  #appScreen .daily-quick-views strong,
+  #appScreen .truth-list strong,
+  #appScreen .winning-card section strong,
+  #appScreen .adoption-checklist strong,
+  #appScreen .saved-views strong {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen input[type="date"],
+  #appScreen input[type="time"],
+  #appScreen input[type="month"] {
+    min-height: 40px !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #appScreen .closing-milestones article input[type="date"] {
+    max-width: 124px !important;
+    justify-self: end !important;
+  }
+}
+
+/* Roteiro de fechamento: compromisso primeiro, data como informação auxiliar. */
+@media (min-width: 901px) {
+  #appScreen .closing-plan-create small,
+  #appScreen .closing-plan-create label,
+  #appScreen .closing-plan-metrics small,
+  #appScreen .closing-target small,
+  #appScreen .closing-milestones header > span {
+    font-size: 10px !important;
+  }
+
+  #appScreen .closing-plan-create h2 {
+    font-size: 20px !important;
+  }
+
+  #appScreen .closing-plan-create p {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  #appScreen .closing-plan-create select,
+  #appScreen .closing-plan-create .premium-select-trigger span {
+    font-size: 12px !important;
+  }
+
+  #appScreen .closing-plan-metrics strong {
+    font-size: 22px !important;
+  }
+
+  #appScreen .closing-plan-layout {
+    grid-template-columns: 330px minmax(0, 1fr) !important;
+  }
+
+  #appScreen .closing-plan-layout aside > header h3 {
+    font-size: 15px !important;
+  }
+
+  #appScreen .closing-plan-item {
+    min-height: 66px !important;
+    padding: 12px !important;
+  }
+
+  #appScreen .closing-plan-item strong {
+    font-size: 12px !important;
+  }
+
+  #appScreen .closing-plan-item small {
+    font-size: 10px !important;
+  }
+
+  #appScreen .closing-plan-item em {
+    font-size: 9px !important;
+  }
+
+  #appScreen .closing-detail-head h2 {
+    font-size: 22px !important;
+  }
+
+  #appScreen .closing-detail-head > div > span {
+    font-size: 11px !important;
+  }
+
+  #appScreen .closing-progress-ring strong {
+    font-size: 17px !important;
+  }
+
+  #appScreen .closing-progress-ring small {
+    font-size: 9px !important;
+  }
+
+  #appScreen .closing-target {
+    grid-template-columns: 150px 1fr auto !important;
+    min-height: 82px !important;
+    padding: 16px !important;
+  }
+
+  #appScreen .closing-target input {
+    min-height: 40px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+
+  #appScreen .closing-target strong {
+    font-size: 13px !important;
+  }
+
+  #appScreen .closing-target span {
+    font-size: 10px !important;
+  }
+
+  #appScreen .closing-target em {
+    font-size: 9px !important;
+  }
+
+  #appScreen .closing-milestones header h3 {
+    font-size: 15px !important;
+  }
+
+  #appScreen .closing-milestones header p {
+    font-size: 11px !important;
+  }
+
+  #appScreen .closing-milestones > div {
+    gap: 8px !important;
+  }
+
+  #appScreen .closing-milestones article {
+    grid-template-columns: 34px 34px minmax(0, 1fr) 132px !important;
+    min-height: 64px !important;
+    gap: 11px !important;
+    padding: 12px !important;
+  }
+
+  #appScreen .closing-milestones article > button {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  #appScreen .closing-milestones article > span {
+    font-size: 10px !important;
+  }
+
+  #appScreen .closing-milestones article strong {
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  #appScreen .closing-milestones article small {
+    font-size: 10px !important;
+  }
+
+  #appScreen .closing-milestones article input {
+    min-height: 40px !important;
+    padding: 8px 9px !important;
+    font-size: 13px !important;
+  }
+
+  #appScreen .closing-detail-actions button {
+    font-size: 12px !important;
+  }
+}
