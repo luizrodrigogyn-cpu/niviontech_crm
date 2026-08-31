@@ -934,3 +934,17 @@ html[data-workspace-theme="darkgray"] #planView .plan-safety-note{color:#d7dce2}
 
 @media(max-width:1050px){#planView .plan-value-banner{grid-template-columns:56px 1fr}.plan-value-signals{grid-column:1/-1;justify-content:flex-start;max-width:none}#planView .plan-cards{grid-template-columns:1fr}#planView .plan-cards article,#planView .plan-cards article.featured{min-height:auto;transform:none}#planView .plan-cards article.featured:hover{transform:translateY(-6px)}}
 @media(max-width:640px){#planView .plan-heading{align-items:flex-start;flex-direction:column}#planView .plan-heading .module-summary{width:100%;text-align:left}#planView .plan-value-banner{grid-template-columns:48px 1fr;padding:20px}#planView .plan-value-banner>span{width:48px;height:48px}.plan-value-signals span{font-size:9px}#planView .plan-cards article{padding:24px 22px}}
+
+/* Rolagem estável da central de planos: preserva o visual sem composição pesada. */
+#planView{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:contain;scroll-behavior:auto!important;scrollbar-gutter:stable;touch-action:pan-y}
+#planView:before{width:420px;height:420px;background:radial-gradient(circle,rgba(72,148,205,.11),transparent 67%)}
+#planView .plan-heading .module-summary{background:rgba(255,255,255,.96);box-shadow:0 12px 28px rgba(17,32,53,.1);backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#planView .plan-value-banner{box-shadow:0 16px 36px rgba(21,55,87,.1);contain:paint}
+#planView .plan-value-banner:after{width:240px;height:240px;box-shadow:0 0 0 34px rgba(65,125,179,.025),0 0 0 68px rgba(65,125,179,.018)}
+#planView .plan-cards article{contain:paint;box-shadow:0 14px 32px rgba(21,34,52,.09);transition:border-color .18s ease,box-shadow .18s ease}
+#planView .plan-cards article:hover{transform:none;box-shadow:0 20px 42px rgba(18,39,62,.13)}
+#planView .plan-cards article.featured{transform:none;box-shadow:0 22px 48px rgba(3,16,29,.24)}
+#planView .plan-cards article.featured:hover{transform:none;box-shadow:0 26px 54px rgba(3,16,29,.29)}
+#planView .plan-cards button{transition:background-color .16s ease,box-shadow .16s ease}
+#planView .plan-cards button:not(:disabled):hover{transform:none}
+@media(prefers-reduced-motion:reduce){#planView .plan-cards article,#planView .plan-cards button{transition:none!important}}
