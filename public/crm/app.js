@@ -25,9 +25,9 @@ import {buildNextBestActions} from './modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from './modules/channel-imports.js';
 
 const WORKSPACE_THEME_KEY='niviontech_workspace_theme';
-function getWorkspaceTheme(){return localStorage.getItem(WORKSPACE_THEME_KEY)==='metallic'?'metallic':'offwhite'}
+function getWorkspaceTheme(){const stored=localStorage.getItem(WORKSPACE_THEME_KEY);return ['metallic','darkgray'].includes(stored)?stored:'offwhite'}
 function applyWorkspaceTheme(theme=getWorkspaceTheme()){
-  const normalized=theme==='metallic'?'metallic':'offwhite';
+  const normalized=['metallic','darkgray'].includes(theme)?theme:'offwhite';
   document.documentElement.dataset.workspaceTheme=normalized;
   document.body?.setAttribute('data-workspace-theme',normalized);
   return normalized

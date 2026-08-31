@@ -211,6 +211,11 @@
 html[data-workspace-theme="offwhite"] #appScreen .workspace{background:linear-gradient(145deg,#faf9f6,#f4f3ef)!important}
 html[data-workspace-theme="metallic"] #appScreen .workspace{background:linear-gradient(145deg,#e7eaed,#d4d9de)!important}
 html[data-workspace-theme="metallic"] #appScreen .topbar{background:rgba(247,249,250,.94)!important}
+html[data-workspace-theme="darkgray"] #appScreen .workspace{background:linear-gradient(145deg,#4b5057,#34383e)!important}
+html[data-workspace-theme="darkgray"] #appScreen .topbar{background:rgba(239,241,243,.97)!important}
+html[data-workspace-theme="darkgray"] #appScreen .dashboard,html[data-workspace-theme="darkgray"] #appScreen .module-view,html[data-workspace-theme="darkgray"] #appScreen .pipeline-view,html[data-workspace-theme="darkgray"] #appScreen .clients-view,html[data-workspace-theme="darkgray"] #appScreen .activities-view{color:#f5f7fa}
+html[data-workspace-theme="darkgray"] #appScreen .module-heading>div>p:last-child,html[data-workspace-theme="darkgray"] #appScreen .growth-section-head>div>p:last-child{color:#d2d7dd!important}
+html[data-workspace-theme="darkgray"] #appScreen .panel-card,html[data-workspace-theme="darkgray"] #appScreen .metrics article,html[data-workspace-theme="darkgray"] #appScreen .module-summary{color:#152038}
 
 #orbitAttentionTrigger .orbit-attention-orb,#orbitAttentionTrigger.orbit-state-available .orbit-attention-orb,#orbitAttentionTrigger.orbit-state-attention .orbit-attention-orb,#orbitAttentionTrigger.orbit-state-risk .orbit-attention-orb,#orbitAttentionTrigger.orbit-state-success .orbit-attention-orb,#appScreen .orbit-mini,#appScreen .orbit-large,#appScreen .orbit-context-mark{border:1px solid rgba(255,255,255,.22)!important;background:linear-gradient(145deg,#24272c,#030405)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 5px 8px rgba(0,0,0,.28)!important;filter:none!important;backdrop-filter:none!important}
 
@@ -868,3 +873,5 @@ html[data-workspace-theme="metallic"] #appScreen .topbar{background:rgba(247,249
     font-size: 12px !important;
   }
 }
+
+.theme-swatch-darkgray{background:linear-gradient(145deg,#555b63,#2f3338)}
