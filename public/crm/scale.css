@@ -331,6 +331,102 @@
   }
 }
 
+/* Nitidez: mais contraste e peso real, sem trocar a família Manrope. */
+#appScreen {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+#appScreen p,
+#appScreen small,
+#appScreen label,
+#appScreen time {
+  color: #5e6978;
+  font-weight: 500;
+}
+
+#appScreen input,
+#appScreen select,
+#appScreen textarea,
+#appScreen button {
+  font-weight: 600;
+}
+
+#appScreen input,
+#appScreen select,
+#appScreen textarea {
+  color: #17243a;
+}
+
+#appScreen input::placeholder,
+#appScreen textarea::placeholder {
+  color: #788291;
+  opacity: 1;
+}
+
+#appScreen .overline,
+#appScreen [class*="section-label"],
+#appScreen [class*="eyebrow"] {
+  color: #59677a !important;
+  font-weight: 800 !important;
+  letter-spacing: .09em !important;
+}
+
+#appScreen h1,
+#appScreen h2,
+#appScreen h3,
+#appScreen h4,
+#appScreen strong {
+  text-rendering: geometricPrecision;
+}
+
+#appScreen .sidebar {
+  -webkit-font-smoothing: antialiased;
+}
+
+#appScreen .sidebar nav button,
+#appScreen .sidebar summary,
+#appScreen .sidebar .settings,
+#appScreen .sidebar .logout-button {
+  color: #d1d9e5;
+  font-weight: 600;
+}
+
+#appScreen .sidebar .guided-nav-main small,
+#appScreen .sidebar .guided-nav-group summary small,
+#appScreen .sidebar .guided-nav-children button,
+#appScreen .sidebar-footer small,
+#appScreen .crm-support-contact small,
+#appScreen .plan-evolution-button small {
+  color: #aeb9c9 !important;
+  font-weight: 500 !important;
+}
+
+#appScreen .catalog-form > label,
+#appScreen .catalog-form-grid label,
+#appScreen .client-product-form label {
+  color: #465469 !important;
+  font-weight: 700 !important;
+}
+
+#appScreen .catalog-form input,
+#appScreen .catalog-form select,
+#appScreen .catalog-form textarea,
+#appScreen .catalog-search input {
+  border-color: #ccd5df !important;
+  background: #fff !important;
+  box-shadow: inset 0 1px 1px rgba(10, 30, 55, .025);
+}
+
+#appScreen .panel-card,
+#appScreen .panel,
+#appScreen .agenda-list,
+#appScreen .closing-milestones article {
+  border-color: #d3dbe4 !important;
+}
+
 /* Régua tipográfica global do produto.
    Nenhuma informação operacional deve depender de microtexto para ser lida. */
 @media (min-width: 901px) {
