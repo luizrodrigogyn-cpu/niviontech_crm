@@ -206,6 +206,156 @@
   }
 }
 
+/* Growth OS: menos densidade, mais leitura e uso real da altura disponível. */
+@media (min-width: 1100px) {
+  #appScreen .growth-os-view .growth-tabs-extended {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    overflow: hidden !important;
+  }
+
+  #appScreen .growth-os-view .growth-tabs-extended button {
+    min-width: 0 !important;
+    min-height: 64px !important;
+    gap: 11px !important;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid #e1e7ec !important;
+  }
+
+  #appScreen .growth-os-view .growth-tabs-extended button > span {
+    flex: 0 0 auto;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 10px !important;
+  }
+
+  #appScreen .growth-os-view .growth-tabs-extended strong {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  #appScreen .growth-os-view .growth-tabs-extended small {
+    font-size: 10.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  #appScreen .growth-os-view .growth-panel {
+    padding-top: 8px !important;
+  }
+
+  #appScreen .growth-os-view .growth-section-head {
+    margin-bottom: 20px !important;
+  }
+
+  #appScreen .growth-os-view .growth-section-head h2 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+  }
+
+  #appScreen .growth-os-view .growth-section-head p:not(.overline) {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  #appScreen .growth-os-view .growth-score-legend span {
+    padding: 7px 10px !important;
+    font-size: 10px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-grid,
+  #appScreen .growth-os-view .intelligence-grid,
+  #appScreen .growth-os-view .leak-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card {
+    min-height: 218px !important;
+    padding: 20px !important;
+    border-radius: 16px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card header button > span {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 13px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card header strong {
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card header small {
+    font-size: 11px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-number strong {
+    font-size: 26px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-number small,
+  #appScreen .growth-os-view .deal-score-card > b,
+  #appScreen .growth-os-view .deal-score-card section small,
+  #appScreen .growth-os-view .deal-score-card em,
+  #appScreen .growth-os-view .deal-score-card footer {
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card > section {
+    gap: 16px !important;
+    margin-top: 15px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-card section > div {
+    gap: 7px !important;
+  }
+
+  #appScreen .growth-os-view .deal-score-bar {
+    height: 7px !important;
+    margin: 15px 0 11px !important;
+  }
+
+  #appScreen .growth-os-view .intelligence-card,
+  #appScreen .growth-os-view .leak-card {
+    min-height: 170px !important;
+    padding: 19px !important;
+  }
+
+  #appScreen .growth-os-view .intelligence-list > button,
+  #appScreen .growth-os-view .mission-list > button,
+  #appScreen .growth-os-view .daily-events > button,
+  #appScreen .growth-os-view .daily-quick-views > button {
+    min-height: 68px !important;
+    padding: 14px 16px !important;
+  }
+
+  #appScreen .growth-os-view .intelligence-card h3,
+  #appScreen .growth-os-view .intelligence-list h3,
+  #appScreen .growth-os-view .leak-card h3,
+  #appScreen .growth-os-view .mission-list h3,
+  #appScreen .growth-os-view .daily-events strong,
+  #appScreen .growth-os-view .daily-quick-views strong,
+  #appScreen .growth-os-view .automation-rules strong {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  #appScreen .growth-os-view .intelligence-card small,
+  #appScreen .growth-os-view .intelligence-list small,
+  #appScreen .growth-os-view .intelligence-list p,
+  #appScreen .growth-os-view .leak-card p,
+  #appScreen .growth-os-view .mission-list small,
+  #appScreen .growth-os-view .mission-list p,
+  #appScreen .growth-os-view .daily-events small,
+  #appScreen .growth-os-view .daily-quick-views small,
+  #appScreen .growth-os-view .automation-rules small,
+  #appScreen .growth-os-view .automation-rules p {
+    font-size: 10.5px !important;
+    line-height: 1.45 !important;
+  }
+}
+
 /* Legibilidade: preserva Manrope e a hierarquia, elevando apenas microtextos. */
 @media (min-width: 901px) {
   #appScreen .overline {
