@@ -331,6 +331,22 @@
   }
 }
 
+/* Ampliação proporcional da área de trabalho em monitores grandes.
+   A largura compensada evita rolagem horizontal e ocupa as margens ociosas. */
+@media (min-width: 1440px) {
+  #appScreen .dashboard,
+  #appScreen .pipeline-view,
+  #appScreen .clients-view,
+  #appScreen .activities-view,
+  #appScreen .module-view {
+    width: 92.6% !important;
+    max-width: none !important;
+    margin-inline: auto !important;
+    padding: 34px 28px 64px !important;
+    zoom: 1.08;
+  }
+}
+
 /* Nitidez: mais contraste e peso real, sem trocar a família Manrope. */
 #appScreen {
   font-synthesis: none;
