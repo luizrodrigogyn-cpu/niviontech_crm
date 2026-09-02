@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260831-1">
+  <link rel="stylesheet" href="styles.css?v=20260902-2">
   <link rel="stylesheet" href="titanium-2.css?v=20260901-1">
   <style>.date-card #todayWeekday{display:block!important;margin-bottom:8px;font-size:11px!important;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.date-card #todayDate{display:block!important;max-width:290px;font-size:clamp(24px,2vw,34px)!important;font-weight:750;line-height:1.08;letter-spacing:-.035em;text-wrap:balance}@media(max-width:760px){#todayView .welcome{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:16px!important}#todayView .welcome>.date-card{width:100%!important;max-width:none!important;min-width:0!important}#todayView .date-card #todayDate{max-width:none!important}#dateCardAgenda span,#dateCardTeam>div{white-space:normal!important}}</style>
   <style>#appScreen h1{font-family:Manrope,sans-serif!important}</style>
@@ -170,13 +170,14 @@
       </div>
       <div class="module-view orbit-coach-view hidden" id="orbitCoachView">
         <div class="module-heading orbit-coach-heading">
-          <div><p class="overline">ORBIT IA · COACH COMERCIAL</p><h1>Prepare, pratique e venda com mais clareza.</h1><p>Treine uma conversa usando o contexto das suas oportunidades e receba uma avaliação objetiva antes da reunião real.</p></div>
-          <div class="orbit-coach-status"><span>O</span><div><small>MODO ATUAL</small><strong>Treinamento seguro</strong></div></div>
+          <div><p class="overline">ORBIT IA · INTELIGÊNCIA COMERCIAL</p><h1>Prospete, prepare e venda com mais clareza.</h1><p>Descubra novas empresas, organize evidências e evolua cada conversa com aprovação humana em todas as etapas.</p></div>
+          <div class="orbit-coach-status"><span>O</span><div><small>PROTEÇÃO ATIVA</small><strong>Sem envio automático</strong></div></div>
         </div>
         <nav class="orbit-module-nav" aria-label="Módulos do Orbit IA">
           <button class="active" data-orbit-module="train"><span>✦</span><div><strong>Treinar</strong><small>Pratique com o ICP da empresa</small></div></button>
           <button data-orbit-module="prepare"><span>◇</span><div><strong>Preparar</strong><small>Planeje uma negociação real</small></div></button>
           <button data-orbit-module="analyze"><span>≡</span><div><strong>Analisar</strong><small>Conversa vira memória e ação</small></div></button>
+          <button data-orbit-module="prospect"><span>⌕</span><div><strong>Prospectar</strong><small>Descubra empresas do seu segmento</small></div></button>
         </nav>
         <div data-orbit-panel="train">
         <section class="icp-panel panel-card">
@@ -247,6 +248,34 @@
           </section>
           <section class="analysis-history panel-card"><header><div><p class="overline">MEMÓRIA COMERCIAL</p><h3>Conversas analisadas</h3></div><span id="analysisHistoryCount">0 registros</span></header><div id="analysisHistoryList"></div></section>
           <section class="pending-roadmap panel-card"><header><div><p class="overline">PRÓXIMAS FASES</p><h3>Pendências que envolvem custo</h3></div><span>Planejadas</span></header><div><article><i>♫</i><strong>Transcrição de áudio</strong><small>Enviar gravações e gerar relatórios.</small></article><article><i>◉</i><strong>Treinamento por voz</strong><small>Conversa falada com cliente virtual.</small></article><article><i>⚡</i><strong>Coach ao vivo</strong><small>Sugestões durante reuniões reais.</small></article><article><i>⇄</i><strong>Integrações</strong><small>WhatsApp, Meet, Zoom e telefonia.</small></article></div></section>
+        </div>
+        <div class="hidden" data-orbit-panel="prospect">
+          <section class="prospect-hero panel-card">
+            <div><p class="overline">ORBIT · PROSPECÇÃO B2B</p><h2>Encontre empresas que combinam com seu mercado.</h2><p>O Orbit pesquisa fontes públicas, elimina duplicatas e explica o score. Você decide o que entra no CRM.</p></div>
+            <div class="prospect-safety"><span>✓</span><div><strong>Fluxo protegido</strong><small>Fontes públicas · limite zero-cost · LGPD by design</small></div></div>
+          </section>
+          <div class="prospect-layout">
+            <form id="prospectSearchForm" class="panel-card prospect-search-form">
+              <header><div><p class="overline">SEGMENTO ATIVO</p><h3>Configurar nova busca</h3></div><span id="prospectProviderState">Verificando busca...</span></header>
+              <label>Segmento desejado<input name="segment" required maxlength="180"></label>
+              <label>Produtos e serviços<textarea name="products" rows="3" maxlength="1200"></textarea></label>
+              <label>Palavras-chave<textarea name="keywords" rows="3" required maxlength="900"></textarea></label>
+              <label>Sinais de oportunidade<textarea name="signals" rows="3" maxlength="1200"></textarea></label>
+              <label>Quem não interessa<textarea name="exclusions" rows="2" maxlength="1200"></textarea></label>
+              <div class="prospect-form-row"><label>Região<input name="region" required maxlength="100"></label><label>Meta<select name="quantity"><option value="25">25 empresas</option><option value="50">50 empresas</option><option value="100">100 empresas</option></select></label></div>
+              <div class="prospect-usage"><span>Consultas gratuitas protegidas</span><strong id="prospectUsage">Carregando limite...</strong></div>
+              <button type="submit" class="primary wide" id="runProspectSearch">Buscar empresas agora</button>
+              <p class="prospect-guard">Nenhuma mensagem será enviada. Caso o limite seja atingido, a busca será bloqueada sem usar alternativa paga.</p>
+            </form>
+            <section class="panel-card prospect-results">
+              <header><div><p class="overline">FILA DE REVISÃO</p><h3>Empresas descobertas</h3></div><strong id="prospectTotal">0</strong></header>
+              <div class="prospect-progress hidden" id="prospectProgress" role="status"><i></i><span>Pesquisando fontes públicas e eliminando duplicatas...</span></div>
+              <div class="prospect-message" id="prospectMessage" role="status"></div>
+              <div class="prospect-toolbar"><label>⌕<input id="prospectSearchInput" type="search" placeholder="Buscar empresa ou domínio"></label><div><button type="button" class="active" data-prospect-filter="pending">Para revisar</button><button type="button" data-prospect-filter="approved">Aprovadas</button><button type="button" data-prospect-filter="all">Todas</button></div></div>
+              <div id="prospectMetrics" class="prospect-metrics"></div>
+              <div id="prospectList" class="prospect-list"></div>
+            </section>
+          </div>
         </div>
       </div>
       <div class="module-view hidden" id="organizeView">
@@ -444,6 +473,6 @@
   </div>
   <div id="clientMergeModal" class="client-merge-modal hidden" aria-hidden="true"><div class="client-merge-backdrop" data-close-client-merge></div><section class="client-merge-card" role="dialog" aria-modal="true" aria-labelledby="clientMergeTitle"><span class="orbit-mini">O</span><small>ORBIT · BASE ORGANIZADA</small><h2 id="clientMergeTitle">Este cliente parece já estar por aqui</h2><p id="mergeSignals"></p><div class="merge-comparison"><div><small>CADASTRO EXISTENTE</small><strong id="mergeExistingName"></strong></div><span>+</span><div><small>NOVO CADASTRO</small><strong id="mergeIncomingName"></strong></div></div><p class="merge-help">Você pode unir as informações, criar um cadastro separado ou voltar para revisar.</p><div class="merge-actions"><button type="button" id="cancelClientMerge" class="text-button">Voltar e revisar</button><button type="button" id="createClientAnyway" class="secondary">Criar mesmo assim</button><button type="button" id="mergeClientConfirm" class="primary">Mesclar cadastros</button></div></section></div>
   <div id="undoToast" class="undo-toast hidden" role="status"><div><strong>Oportunidade movimentada</strong><small id="undoMessage">A etapa foi atualizada.</small></div><button id="undoMove">Desfazer</button><button id="dismissUndo" aria-label="Fechar">×</button></div>
-  <script type="module" src="app.js?v=20260831-16"></script>
+  <script type="module" src="app.js?v=20260902-2"></script>
 </body>
 </html>

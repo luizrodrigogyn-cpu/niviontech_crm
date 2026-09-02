@@ -114,6 +114,16 @@ export async function ensureSchema() {
     locked_until TEXT
   )`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS crm_deal_rooms_org_idx ON crm_deal_rooms (org_id, created_at DESC)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS crm_prospect_usage (
+    id TEXT PRIMARY KEY NOT NULL,
+    org_id TEXT NOT NULL,
+    period TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    cap INTEGER NOT NULL DEFAULT 100,
+    updated_at TEXT NOT NULL
+  )`).run();
+  await db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS crm_prospect_usage_org_period_idx ON crm_prospect_usage (org_id, period)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS crm_prospect_usage_period_idx ON crm_prospect_usage (period)`).run();
   return db;
 }
 

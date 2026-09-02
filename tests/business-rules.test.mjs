@@ -23,6 +23,7 @@ import {buildRecoveryCenter,recoveryMessage,buildWinningLibrary,recommendWinning
 import {collectSyncStorage,replaceSyncStorage,resolveStartupSync,snapshotFingerprint,mergeSyncSnapshots} from '../modules/sync.js';
 import {migrateClerkIdentity,withoutLocalCredentials} from '../public/crm/modules/auth.js';
 import {INTRO_TIMINGS,callOnce,markBrandIntroPlayed,rescaleParticles,resolveDpr,resolveLogoScale,shouldPlayBrandIntro} from '../modules/brand-intro-core.js';
+import {buildProspectApproach,buildProspectingQueries,defaultProspectProfile,mergeProspectCandidates,prospectCandidateFromResult,scoreProspectCandidate} from '../modules/prospecting.js';
 
 const tests=[];
 function test(name,run){tests.push({name,run})}
@@ -476,6 +477,40 @@ test('Fase 7: decisor resistente sinaliza risco político alto',()=>{
   assert.equal(result.risk,'high');
   assert.ok(result.missing.includes('champion'));
   assert.ok(result.recommendations.some(item=>item.includes('Diretor')));
+});
+
+test('Orbit Prospectar cria consultas limitadas pelo ICP configurado',()=>{
+  const queries=buildProspectingQueries({...defaultProspectProfile,keywords:'rastreamento veicular; telemetria; M2M; IoT; frotas; rastreador 4G; excedente',region:'Brasil'});
+  assert.equal(queries.length,6);
+  assert.match(queries[0],/rastreamento veicular/);
+  assert.ok(queries.every(item=>item.includes('Brasil')));
+});
+
+test('Orbit Prospectar produz score explicável e exige aderência ao segmento',()=>{
+  const result={title:'Empresa de rastreamento veicular e telemetria',url:'https://empresa.com.br/solucoes',content:'Soluções brasileiras para gestão de frotas, rastreadores e telemetria de veículos em todo o Brasil.'};
+  const scoring=scoreProspectCandidate(result,defaultProspectProfile);
+  const candidate=prospectCandidateFromResult(result,defaultProspectProfile,'search-1');
+  assert.ok(scoring.score>=60);
+  assert.equal(scoring.breakdown.reduce((total,item)=>total+item.points,0),scoring.score);
+  assert.equal(candidate.domain,'empresa.com.br');
+  assert.equal(candidate.status,'pending');
+  assert.equal(candidate.searchId,'search-1');
+});
+
+test('Orbit Prospectar bloqueia duplicatas por domínio e nome do CRM',()=>{
+  const candidate={id:'p1',company:'Empresa Sol',website:'https://empresa.com.br',domain:'empresa.com.br'};
+  const duplicateDomain={...candidate,id:'p2',company:'Outro nome'};
+  const duplicateClient={...candidate,id:'p3',company:'Cliente Existente',website:'https://novo.com.br',domain:'novo.com.br'};
+  const result=mergeProspectCandidates([candidate],[duplicateDomain,duplicateClient],[{name:'Cliente Existente'}]);
+  assert.equal(result.inserted.length,0);
+  assert.equal(result.duplicates.length,2);
+});
+
+test('Orbit Prospectar prepara abordagem para revisão sem instrução de disparo',()=>{
+  const message=buildProspectApproach({company:'Empresa Sol',signals:['Sinal: oferece telemetria']},defaultProspectProfile);
+  assert.match(message,/Empresa Sol/);
+  assert.match(message,/breve reunião/);
+  assert.doesNotMatch(message,/enviado|disparo automático/i);
 });
 
 test('Orbit prioriza o sujeito completo no Cole e organize',()=>{

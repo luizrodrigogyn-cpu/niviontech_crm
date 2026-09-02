@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // Um registro por ORGANIZAÇÃO (empresa), não por usuário autenticado individual.
 // Todos os membros da mesma empresa leem/escrevem o mesmo snapshot.
@@ -37,3 +37,15 @@ export const crmLoginAudit=sqliteTable('crm_login_audit',{
 export const crmDealRooms=sqliteTable('crm_deal_rooms',{
   token:text('token').primaryKey(),orgId:text('org_id').notNull(),payload:text('payload').notNull(),accessHash:text('access_hash').notNull(),expiresAt:text('expires_at').notNull(),revokedAt:text('revoked_at'),createdAt:text('created_at').notNull(),updatedAt:text('updated_at').notNull(),viewCount:integer('view_count').notNull().default(0),lastViewedAt:text('last_viewed_at'),failedAttempts:integer('failed_attempts').notNull().default(0),lockedUntil:text('locked_until'),
 });
+
+export const crmProspectUsage=sqliteTable('crm_prospect_usage',{
+  id:text('id').primaryKey(),
+  orgId:text('org_id').notNull(),
+  period:text('period').notNull(),
+  used:integer('used').notNull().default(0),
+  cap:integer('cap').notNull().default(100),
+  updatedAt:text('updated_at').notNull(),
+},table=>({
+  orgPeriodIdx:uniqueIndex('crm_prospect_usage_org_period_idx').on(table.orgId,table.period),
+  periodIdx:index('crm_prospect_usage_period_idx').on(table.period),
+}));

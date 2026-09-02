@@ -23,6 +23,7 @@ import {analyzeBuyingCommittee,stakeholderRoles} from './modules/buying-committe
 import {buildMeetingPreparation} from './modules/meeting-preparation.js';
 import {buildNextBestActions} from './modules/next-best-action.js';
 import {parseIcs,parseEml,matchClientForChannel,filterNewChannelRecords} from './modules/channel-imports.js';
+import {buildProspectApproach,defaultProspectProfile,mergeProspectCandidates,normalizeProspectUrl,prospectCandidateFromResult,prospectingDomain} from './modules/prospecting.js';
 
 const WORKSPACE_THEME_KEY='niviontech_workspace_theme';
 function getWorkspaceTheme(){const stored=localStorage.getItem(WORKSPACE_THEME_KEY);return ['metallic','darkgray'].includes(stored)?stored:'offwhite'}
@@ -35,7 +36,7 @@ function applyWorkspaceTheme(theme=getWorkspaceTheme()){
 applyWorkspaceTheme();
 import {SYNC_META_KEY,SYNC_DEVICE_KEY,collectSyncStorage,replaceSyncStorage,snapshotFingerprint,resolveStartupSync,mergeSyncSnapshots} from './modules/sync.js?v=20260828-1';
 
-const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain]);
+const domainModules=Object.freeze([authDomain,onboardingDomain,pipelineDomain,clientsDomain,activitiesDomain,proposalsDomain,receiptsDomain,reportsDomain,teamDomain,organizeDomain,prospectingDomain]);
 
 const STORAGE={owner:'niviontech_owner',company:'niviontech_company'};
 const NEW_MENU_ITEMS=[];
@@ -931,12 +932,71 @@ const COACH_HISTORY_KEY='niviontech_orbit_ia_training_history';
 const ORBIT_ICP_KEY='niviontech_orbit_ia_icp';
 const ORBIT_CONVERSATIONS_KEY='niviontech_orbit_ia_conversations';
 const ORBIT_PREPARATIONS_KEY='niviontech_orbit_ia_preparations';
+const PROSPECTS_KEY='niviontech_orbit_prospects';
+const PROSPECT_PROFILE_KEY='niviontech_orbit_prospect_profile';
+const PROSPECT_SEARCH_HISTORY_KEY='niviontech_orbit_prospect_searches';
 function getOrbitIcp(){try{return JSON.parse(localStorage.getItem(ORBIT_ICP_KEY))||{}}catch{return{}}}
 function saveOrbitIcp(value){localStorage.setItem(ORBIT_ICP_KEY,JSON.stringify({...value,updatedAt:new Date().toISOString(),updatedBy:appState.currentUser?.id||''}))}
 function getOrbitConversations(){try{return JSON.parse(localStorage.getItem(ORBIT_CONVERSATIONS_KEY))||[]}catch{return[]}}
 function saveOrbitConversations(items){localStorage.setItem(ORBIT_CONVERSATIONS_KEY,JSON.stringify(items.slice(0,200)))}
 function getOrbitPreparations(){try{return JSON.parse(localStorage.getItem(ORBIT_PREPARATIONS_KEY))||[]}catch{return[]}}
 function saveOrbitPreparations(items){localStorage.setItem(ORBIT_PREPARATIONS_KEY,JSON.stringify(items.slice(0,100)))}
+function getProspects(){try{const value=JSON.parse(localStorage.getItem(PROSPECTS_KEY));return Array.isArray(value)?value:[]}catch{return[]}}
+function saveProspects(items){localStorage.setItem(PROSPECTS_KEY,JSON.stringify(items.slice(0,500)))}
+function getProspectProfile(){try{return{...defaultProspectProfile,...JSON.parse(localStorage.getItem(PROSPECT_PROFILE_KEY))}}catch{return{...defaultProspectProfile}}}
+function saveProspectProfile(profile){localStorage.setItem(PROSPECT_PROFILE_KEY,JSON.stringify({...profile,updatedAt:new Date().toISOString(),updatedBy:appState.currentUser?.id||''}))}
+function saveProspectSearchHistory(entry){let items=[];try{items=JSON.parse(localStorage.getItem(PROSPECT_SEARCH_HISTORY_KEY))||[]}catch{}items.unshift(entry);localStorage.setItem(PROSPECT_SEARCH_HISTORY_KEY,JSON.stringify(items.slice(0,50)))}
+let activeProspectFilter='pending';
+function hydrateProspectForm(){const form=$('#prospectSearchForm');if(!form)return;const profile=getProspectProfile();['segment','products','keywords','signals','exclusions','region'].forEach(key=>{const field=form.elements.namedItem(key);if(field&&!field.value)field.value=profile[key]||''})}
+async function refreshProspectProviderState(){
+  const state=$('#prospectProviderState'),usage=$('#prospectUsage');if(!state||!usage)return;
+  try{const response=await fetch('/api/prospect/search',{credentials:'same-origin'}),data=await response.json();if(!response.ok)throw new Error();state.textContent=data.configured?'Busca automática ativa':'Busca aguardando configuração';state.dataset.tone=data.configured?'success':'warning';usage.textContent=`${data.usage.remaining} de ${data.usage.cap} consultas disponíveis neste mês`}
+  catch{state.textContent='Busca indisponível agora';state.dataset.tone='warning';usage.textContent='Limite protegido pelo sistema'}
+}
+function prospectStatusLabel(status){return{pending:'Para revisar',approved:'Aprovada',discarded:'Descartada',converted:'No CRM'}[status]||'Para revisar'}
+function prospectMetricsMarkup(items){const count=status=>items.filter(item=>item.status===status).length;return[['pending','Para revisar'],['approved','Aprovadas'],['converted','No CRM'],['discarded','Descartadas']].map(([status,label])=>`<article><strong>${count(status)}</strong><span>${label}</span></article>`).join('')}
+function renderProspecting(){
+  hydrateProspectForm();const items=getProspects(),list=$('#prospectList'),query=String($('#prospectSearchInput')?.value||'').trim().toLocaleLowerCase('pt-BR');if(!list)return;
+  $('#prospectTotal').textContent=String(items.length);$('#prospectMetrics').innerHTML=prospectMetricsMarkup(items);
+  document.querySelectorAll('[data-prospect-filter]').forEach(button=>button.classList.toggle('active',button.dataset.prospectFilter===activeProspectFilter));
+  const visible=items.filter(item=>(activeProspectFilter==='all'||item.status===activeProspectFilter)&&(!query||`${item.company} ${item.domain} ${item.location}`.toLocaleLowerCase('pt-BR').includes(query))).sort((left,right)=>Number(right.score||0)-Number(left.score||0));
+  if(!visible.length){list.innerHTML=orbitEmptyState(items.length?'Nenhuma empresa neste filtro':'Sua próxima busca começa aqui',items.length?'Escolha outro filtro ou pesquise pelo nome da empresa.':'Configure o segmento e clique em “Buscar empresas agora”.','prospect-empty');return}
+  list.innerHTML=visible.map(item=>{
+    const breakdown=(item.scoreBreakdown||[]).map(part=>`<li><span>${escapeHtml(part.label)}</span><b>+${Number(part.points||0)}</b></li>`).join('');
+    const signals=(item.signals||[]).map(signal=>`<span>${escapeHtml(signal.replace(/^(Palavra-chave|Sinal):\s*/,''))}</span>`).join('');
+    const actions=item.status==='pending'?`<button type="button" class="secondary" data-prospect-discard="${item.id}">Descartar</button><button type="button" class="primary" data-prospect-approve="${item.id}">Aprovar empresa</button>`:item.status==='approved'?`<button type="button" class="secondary" data-prospect-draft="${item.id}">Preparar abordagem</button><button type="button" class="primary" data-prospect-convert="${item.id}">Criar prospect no CRM</button>`:item.status==='converted'?`<button type="button" class="secondary" data-prospect-open="${item.existingClientId||''}">Abrir no CRM</button>`:'';
+    const draft=item.draftMessage?`<div class="prospect-draft"><small>ABORDAGEM PARA REVISÃO</small><p>${escapeHtml(item.draftMessage)}</p><button type="button" data-prospect-copy="${item.id}">Copiar texto</button><span>Nenhuma mensagem foi enviada.</span></div>`:'';
+    return `<article class="prospect-card status-${item.status}"><header><div><span class="prospect-avatar">${escapeHtml(item.company.charAt(0).toUpperCase())}</span><div><h4>${escapeHtml(item.company)}</h4><a href="${escapeHtml(item.evidenceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(item.domain)} ↗</a></div></div><div class="prospect-score"><strong>${Number(item.score||0)}</strong><span>score</span></div></header><div class="prospect-card-body"><div class="prospect-tags">${signals||'<span>Evidência pública encontrada</span>'}</div><p>${escapeHtml(item.evidenceSummary||'Consulte a página de evidência antes de aprovar.')}</p><details><summary>Como o score foi calculado</summary><ul>${breakdown}</ul></details></div><footer><span class="prospect-status">${prospectStatusLabel(item.status)}</span><div>${actions}</div></footer>${draft}</article>`;
+  }).join('');
+  list.querySelectorAll('[data-prospect-approve]').forEach(button=>button.onclick=()=>reviewProspect(button.dataset.prospectApprove,'approved'));
+  list.querySelectorAll('[data-prospect-discard]').forEach(button=>button.onclick=()=>reviewProspect(button.dataset.prospectDiscard,'discarded'));
+  list.querySelectorAll('[data-prospect-convert]').forEach(button=>button.onclick=()=>convertProspectToClient(button.dataset.prospectConvert));
+  list.querySelectorAll('[data-prospect-draft]').forEach(button=>button.onclick=()=>prepareProspectDraft(button.dataset.prospectDraft));
+  list.querySelectorAll('[data-prospect-copy]').forEach(button=>button.onclick=()=>copyProspectDraft(button.dataset.prospectCopy));
+  list.querySelectorAll('[data-prospect-open]').forEach(button=>button.onclick=()=>{showView('clients');if(button.dataset.prospectOpen)openClientDrawer(button.dataset.prospectOpen)});
+}
+function reviewProspect(id,status){const items=getProspects(),item=items.find(entry=>entry.id===id);if(!item)return;item.status=status;item.reviewedAt=new Date().toISOString();item.reviewedBy=appState.currentUser?.id||'';saveProspects(items);renderProspecting()}
+function prepareProspectDraft(id){const items=getProspects(),item=items.find(entry=>entry.id===id);if(!item||item.status!=='approved')return;item.draftMessage=buildProspectApproach(item,getProspectProfile());item.draftCreatedAt=new Date().toISOString();saveProspects(items);renderProspecting()}
+async function copyProspectDraft(id){const item=getProspects().find(entry=>entry.id===id);if(!item?.draftMessage)return;try{await navigator.clipboard.writeText(item.draftMessage);$('#prospectMessage').textContent='Texto copiado para sua revisão. Nenhuma mensagem foi enviada.'}catch{$('#prospectMessage').textContent='Selecione o texto e copie manualmente. Nenhuma mensagem foi enviada.'}}
+function convertProspectToClient(id){
+  const prospects=getProspects(),item=prospects.find(entry=>entry.id===id);if(!item||item.status!=='approved')return;
+  const clients=getClients(),normalizedName=item.company.trim().toLocaleLowerCase('pt-BR'),existing=clients.find(client=>client.name.trim().toLocaleLowerCase('pt-BR')===normalizedName||Boolean(client.website&&normalizeProspectUrl(client.website)?.domain===item.domain));
+  if(existing){item.status='converted';item.existingClientId=existing.id;item.convertedAt=new Date().toISOString();saveProspects(prospects);$('#prospectMessage').textContent='Esta empresa já existia no CRM. O cadastro foi vinculado sem duplicar.';renderProspecting();return}
+  const client={id:'client-'+Date.now(),name:item.company,segment:getProspectProfile().segment,status:'Prospect',city:item.location||'Não informado',phone:'',email:'',website:item.website,source:'Orbit Prospectar',prospectScore:item.score,prospectEvidence:item.evidenceUrl,interactions:[{id:'interaction-'+Date.now(),title:'Empresa aprovada na prospecção do Orbit',text:item.evidenceSummary||'Origem pública registrada.',date:new Date().toISOString()}]};
+  clients.push(client);saveClients(clients);item.status='converted';item.existingClientId=client.id;item.convertedAt=new Date().toISOString();item.convertedBy=appState.currentUser?.id||'';saveProspects(prospects);$('#prospectMessage').textContent='Prospect criado no CRM. Nenhuma abordagem foi enviada.';renderProspecting()
+}
+async function runProspectSearch(event){
+  event.preventDefault();const form=event.currentTarget,button=$('#runProspectSearch'),progress=$('#prospectProgress'),message=$('#prospectMessage'),values=Object.fromEntries(new FormData(form)),profile={segment:values.segment,products:values.products,keywords:values.keywords,signals:values.signals,exclusions:values.exclusions,region:values.region},quantity=Number(values.quantity);
+  saveProspectProfile(profile);button.disabled=true;button.textContent='Pesquisando agora...';progress.classList.remove('hidden');message.textContent='';
+  try{
+    const response=await fetch('/api/prospect/search',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({profile,quantity})}),data=await response.json();
+    if(!response.ok)throw new Error(data.message||'Não foi possível executar a busca agora.');
+    const candidates=(data.results||[]).map(result=>prospectCandidateFromResult(result,profile,data.searchId)).filter(Boolean).sort((left,right)=>right.score-left.score).slice(0,quantity),merged=mergeProspectCandidates(getProspects(),candidates,getClients());
+    saveProspects(merged.items);saveProspectSearchHistory({id:data.searchId,profile,quantity,found:merged.inserted.length,duplicates:merged.duplicates.length,createdAt:new Date().toISOString(),queriesExecuted:data.queriesExecuted,usage:data.usage});
+    message.textContent=`Busca concluída: ${merged.inserted.length} empresa(s) nova(s), ${merged.duplicates.length} duplicata(s) evitada(s).`;renderProspecting();await refreshProspectProviderState();
+  }catch(error){message.textContent=error.message||'Não foi possível executar a busca agora.'}
+  finally{button.disabled=false;button.textContent='Buscar empresas agora';progress.classList.add('hidden')}
+}
 const coachPersonas={
   analytical:{name:'Cliente analítico',opening:'Antes de avançarmos, preciso entender exatamente como isso funciona e quais resultados podemos medir.',followups:['Quais indicadores mostram que essa solução realmente funciona?','Como seria a implantação na prática?','Que riscos eu devo considerar antes de decidir?']},
   skeptical:{name:'Cliente cético',opening:'Já ouvi promessas parecidas antes. Por que eu deveria acreditar que desta vez será diferente?',followups:['Isso parece caro. Onde está o retorno?','O que acontece se a equipe não aderir?','Por que eu não deveria continuar como estou hoje?']},
@@ -976,7 +1036,7 @@ function coachReply(){const persona=coachPersonas[coachState.persona],index=Math
 function submitCoachMessage(event){event.preventDefault();const input=$('#coachMessage'),message=input.value.trim();if(!message)return;coachState.turns.push(message);$('#coachMessages').insertAdjacentHTML('beforeend',`<article class="coach-message seller"><span>${escapeHtml((appState.currentUser?.name||'V').charAt(0))}</span><div><small>VOCÊ</small><p>${escapeHtml(message)}</p></div></article><article class="coach-message client"><span>${escapeHtml((selectedCoachDeal()?.client||coachPersonas[coachState.persona].name).charAt(0))}</span><div><small>CLIENTE</small><p>${escapeHtml(coachReply())}</p></div></article>`);input.value='';updateCoachProgress();$('#coachMessages').scrollTop=$('#coachMessages').scrollHeight}
 function finishCoachTraining(){if(!coachState.turns.length){$('#coachMessage').focus();return}const scores=coachCriteria.map(criterion=>({...criterion,score:criterionScore(criterion)})),overall=Math.round(scores.reduce((sum,item)=>sum+item.score,0)/scores.length),deal=selectedCoachDeal(),strengths=[...scores].sort((a,b)=>b.score-a.score).slice(0,2),improvements=[...scores].sort((a,b)=>a.score-b.score).slice(0,2);$('#orbitTraining').classList.add('hidden');$('#coachResult').classList.remove('hidden');$('#coachOverallScore').textContent=overall;$('#coachResultTitle').textContent=overall>=80?'Apresentação consistente':overall>=60?'Boa base para evoluir':'Há espaço para praticar';$('#coachResultSummary').textContent=`Você concluiu ${coachState.turns.length} interações. O Orbit IA identificou os pontos abordados e montou seu próximo foco de treinamento.`;$('#coachScoreGrid').innerHTML=scores.map(item=>`<article><div><span>${item.label}</span><strong>${item.score}%</strong></div><i><b style="width:${item.score}%"></b></i></article>`).join('');$('#coachStrengths').innerHTML=strengths.map(item=>`<p><span>✓</span><strong>${item.label}</strong><small>Continue usando essa abordagem.</small></p>`).join('');$('#coachImprovements').innerHTML=improvements.map(item=>`<p><span>↗</span><strong>${item.label}</strong><small>Inclua perguntas e uma confirmação clara.</small></p>`).join('');const history=coachHistory();history.unshift({id:crypto.randomUUID(),score:overall,client:deal?.client||coachPersonas[coachState.persona].name,goal:$('#coachGoal').selectedOptions[0].textContent,turns:coachState.turns.length,date:new Date().toISOString(),userId:appState.currentUser?.id||''});saveCoachHistory(history);renderCoachHistory()}
 function restartCoachTraining(){$('#coachResult').classList.add('hidden');$('#orbitTraining').classList.add('hidden');$('#orbitCoachStart').classList.remove('hidden');renderOrbitCoach()}
-function orbitModule(name){document.querySelectorAll('[data-orbit-module]').forEach(button=>button.classList.toggle('active',button.dataset.orbitModule===name));document.querySelectorAll('[data-orbit-panel]').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.orbitPanel!==name));if(name==='prepare'||name==='analyze')renderOrbitCoach()}
+function orbitModule(name){document.querySelectorAll('[data-orbit-module]').forEach(button=>button.classList.toggle('active',button.dataset.orbitModule===name));document.querySelectorAll('[data-orbit-panel]').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.orbitPanel!==name));if(name==='prepare'||name==='analyze')renderOrbitCoach();if(name==='prospect'){renderProspecting();refreshProspectProviderState()}}
 function saveIcp(event){event.preventDefault();saveOrbitIcp(Object.fromEntries(new FormData(event.currentTarget)));$('#icpStatus').textContent='ICP configurado ✓';alert('DNA comercial salvo. Os próximos treinamentos usarão esse contexto.')}
 function splitTerms(value=''){return String(value).split(/[,;\n]/).map(item=>item.trim()).filter(Boolean)}
 function renderPreparationHistory(){const target=$('#preparationHistoryList'),items=getOrbitPreparations();if(!target)return;$('#preparationHistoryCount').textContent=`${items.length} ${items.length===1?'preparação':'preparações'}`;target.innerHTML=items.length?items.slice(0,6).map(item=>`<article><span>${item.readiness}%</span><div><strong>${escapeHtml(item.client)}</strong><p>${escapeHtml(item.deal)} · ${escapeHtml(item.meetingLabel)}</p><small>${new Date(item.date).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})} · ${escapeHtml(item.actor)}</small></div></article>`).join(''):orbitEmptyState('Prepare a primeira reunião','O histórico mostrará como o vendedor chegou preparado para cada conversa.')}
@@ -996,6 +1056,9 @@ function applyOrbitCommercialContinuation(dealId,choices){const deal=getDeals().
 function enhanceOrbitAnalysisFlow(){const preview=document.querySelector('.analysis-change-preview'),button=$('#confirmOrbitAnalysis'),dealId=$('#analysisDealSelect').value;if(!preview||preview.dataset.journeyReady)return;preview.dataset.journeyReady='1';preview.insertAdjacentHTML('beforeend',`<label><input type="checkbox" data-analysis-apply="proposal" ${dealId?'':'disabled'}> Preparar rascunho de proposta</label><label><input type="checkbox" data-analysis-apply="plan" ${dealId?'':'disabled'}> Criar plano de fechamento</label>`);if(button){button.textContent='Aprovar e conduzir próximos passos';button.onclick=()=>{const choices=[...document.querySelectorAll('[data-analysis-apply]:checked')].map(input=>input.dataset.analysisApply);confirmOrbitAnalysis();applyOrbitCommercialContinuation(dealId,choices)}}}
 $('#analyzeDealConversation').onclick=()=>{analyzeDealConversation();enhanceOrbitAnalysisFlow()};
 $('#analysisFile').onchange=importAnalysisFile;
+$('#prospectSearchForm').onsubmit=runProspectSearch;
+$('#prospectSearchInput').oninput=renderProspecting;
+document.querySelectorAll('[data-prospect-filter]').forEach(button=>button.onclick=()=>{activeProspectFilter=button.dataset.prospectFilter;renderProspecting()});
 $('#cadenceTemplate').onchange=renderCadencePreview;$('#cadenceClient').onchange=syncCadenceDeals;$('#cadenceForm').onsubmit=activateCadence;
 document.querySelectorAll('[data-coach-persona]').forEach(button=>button.onclick=()=>{coachState.persona=button.dataset.coachPersona;document.querySelectorAll('[data-coach-persona]').forEach(item=>item.classList.toggle('active',item===button))});
 $('#startCoachTraining').onclick=startCoachTraining;
