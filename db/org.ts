@@ -88,6 +88,17 @@ export async function ensureSchema() {
     created_at TEXT NOT NULL
   )`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS crm_login_audit_user_idx ON crm_login_audit (user_id, created_at DESC)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS crm_deal_room_access_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    token TEXT NOT NULL,
+    event_status TEXT NOT NULL,
+    code_prefix TEXT,
+    created_at TEXT NOT NULL,
+    ip_hash TEXT,
+    user_agent_hash TEXT,
+    details TEXT
+  )`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS crm_deal_room_access_events_token_idx ON crm_deal_room_access_events (token, created_at DESC)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS crm_deal_rooms (
     token TEXT PRIMARY KEY NOT NULL,
     org_id TEXT NOT NULL,

@@ -56,8 +56,66 @@ const CLOSING_PLANS_KEY='niviontech_closing_plans';
 const AUTOMATION_RULES_KEY='niviontech_growth_automation_rules';
 const COACHING_SESSIONS_KEY='niviontech_coaching_sessions';
 const DAILY_LAST_REVIEW_KEY='niviontech_daily_last_review';
-const authParams=new URLSearchParams(location.search);
-const clerkIdentity=authParams.get('clerk')==='1'?{userId:authParams.get('userId')||'',orgId:authParams.get('orgId')||'',role:authParams.get('role')||'member',profile:authParams.get('profile')||'Colaborador comercial',name:authParams.get('name')||'',email:authParams.get('email')||''}:null;
+let clerkIdentity = null;
+let trustedAuthOrigin = null;
+const TRUSTED_AUTH_ORIGIN = location.origin;
+
+function normalizeClerkIdentity(candidate){
+  if(!candidate || typeof candidate !== 'object') return null;
+  const userId = String(candidate.userId || '').trim();
+  const orgId = String(candidate.orgId || '').trim();
+  if(!userId || !orgId) return null;
+  return {
+    userId,
+    orgId,
+    role: String(candidate.role || 'member').slice(0,40) || 'member',
+    profile: String(candidate.profile || 'Colaborador comercial').slice(0,64),
+    name: String(candidate.name || '').slice(0,120),
+    email: String(candidate.email || '').trim().toLowerCase().slice(0,240),
+  };
+}
+
+function getAuthFromMessage(event){
+  if(event.origin !== TRUSTED_AUTH_ORIGIN) return null;
+  const payload = event.data && typeof event.data === 'object' ? event.data : null;
+  if(!payload || payload.type !== 'niviontech:auth') return null;
+  trustedAuthOrigin = event.origin;
+  return normalizeClerkIdentity(payload.clerkIdentity || payload.payload || payload.identity);
+}
+
+function waitForIframeAuth(timeoutMs = 800){
+  if(clerkIdentity) return Promise.resolve(clerkIdentity);
+  return new Promise(resolve=>{
+    let done = false;
+    const onMessage = (event) => {
+      const nextIdentity = getAuthFromMessage(event);
+      if(!nextIdentity || done) return;
+      done = true;
+      clerkIdentity = nextIdentity;
+      clearTimeout(timeoutId);
+      window.removeEventListener('message', onMessage);
+      resolve(nextIdentity);
+    };
+    const timeoutId = setTimeout(() => {
+      if(done) return;
+      done = true;
+      window.removeEventListener('message', onMessage);
+      resolve(null);
+    }, timeoutMs);
+    window.addEventListener('message', onMessage);
+  });
+}
+
+async function bootstrapClerkIdentityFromServer(){
+  try{
+    const response = await fetch('/api/auth/bootstrap',{credentials:'same-origin'});
+    if(!response.ok) return null;
+    const body = await response.json();
+    return normalizeClerkIdentity(body);
+  }catch{
+    return null;
+  }
+}
 
 function createStore(key,initialData,{normalize,afterSave}={}){
   return{
@@ -224,16 +282,21 @@ function installCloudSyncPanel(){
 }
 
 function initialize(){
-  if(clerkIdentity){
-    const user=migrateClerkIdentity(localStorage,sessionStorage,clerkIdentity);
-    appState.currentUser=user;
-    user.onboardingComplete||getCompany()?openDashboard(user):openOnboarding();
-    return;
-  }
-  const owner=getOwner();
-  const sessionUser=activeSessionUser();
-  if(sessionUser&&owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
-  setScreen('authScreen');
+  clerkIdentity = normalizeClerkIdentity(clerkIdentity);
+  return (async() => {
+    if(!clerkIdentity) clerkIdentity = await waitForIframeAuth(900);
+    if(!clerkIdentity) clerkIdentity = await bootstrapClerkIdentityFromServer();
+    if(clerkIdentity){
+      const user = migrateClerkIdentity(localStorage, sessionStorage, clerkIdentity);
+      appState.currentUser = user;
+      user.onboardingComplete || getCompany() ? openDashboard(user) : openOnboarding();
+      return;
+    }
+    const owner = getOwner();
+    const sessionUser = activeSessionUser();
+    if(sessionUser && owner){appState.currentUser=sessionUser;owner.onboardingComplete?openDashboard(sessionUser):openOnboarding();return}
+    setScreen('authScreen');
+  })();
 }
 
 $('#accessForm').addEventListener('submit',event=>{event.preventDefault();location.href='/'});
@@ -994,7 +1057,7 @@ $('#clientProductForm').onsubmit=event=>{event.preventDefault();const data=Objec
 $('#stakeholderForm').onsubmit=event=>{event.preventDefault();const clients=getClients(),client=clients.find(item=>item.id===appState.activeClientId);if(!client)return;const stakeholder=Object.fromEntries(new FormData(event.currentTarget));stakeholder.id='stakeholder-'+Date.now();stakeholder.createdAt=new Date().toISOString();client.stakeholders=client.stakeholders||[];client.stakeholders.push(stakeholder);if(stakeholder.role==='decision'&&!client.decisionMaker)client.decisionMaker=stakeholder.name;if(stakeholder.role==='champion'&&!client.mainContact)client.mainContact=stakeholder.name;addEntityHistory(client,'Comitê de compra atualizado',`${stakeholder.name} adicionado como ${stakeholderRoles.find(item=>item.id===stakeholder.role)?.label||stakeholder.role}`);saveClients(clients);event.currentTarget.reset();openClientDrawer(client.id)};
 $('#exportBackup').onclick=exportBackup;$('#exportClientsCsv').onclick=exportClientsCsv;
 
-function logout(){sessionStorage.removeItem(SESSION);if(clerkIdentity){window.parent.postMessage({type:'niviontech:sign-out'},location.origin);return}location.href='/'}
+function logout(){sessionStorage.removeItem(SESSION);if(clerkIdentity){window.parent.postMessage({type:'niviontech:sign-out'},trustedAuthOrigin||location.origin);return}location.href='/'}
 $('#logoutButton').onclick=logout;
 $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');

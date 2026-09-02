@@ -31,6 +31,7 @@ export default function CrmGate() {
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [identity, setIdentity] = useState<BootstrapIdentity | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -52,24 +53,33 @@ export default function CrmGate() {
 
   useEffect(() => {
     const listener = (event: MessageEvent) => {
-      if (event.origin === window.location.origin && event.data?.type === 'niviontech:sign-out') signOut({ redirectUrl: '/' });
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'niviontech:sign-out') signOut({ redirectUrl: '/' });
+      if (event.data?.type === 'niviontech:iframe-ready') setIframeReady(true);
     };
     window.addEventListener('message', listener);
     return () => window.removeEventListener('message', listener);
   }, [signOut]);
 
+  useEffect(() => {
+    if (!identity || !iframeReady) return;
+    const message = {
+      type: 'niviontech:auth',
+      clerkIdentity: {
+        userId: identity.userId,
+        orgId: identity.orgId,
+        role: identity.role,
+        profile: identity.profile,
+        name: identity.name,
+        email: identity.email,
+      },
+    };
+    window.parent.postMessage(message, window.location.origin);
+  }, [identity, iframeReady]);
+
   const iframeUrl = useMemo(() => {
     if (!identity) return '';
-    const params = new URLSearchParams({
-      clerk: '1',
-      userId: identity.userId,
-      orgId: identity.orgId,
-      role: identity.role,
-      profile: identity.profile,
-      name: identity.name,
-      email: identity.email,
-    });
-    return `/crm/index.html?${params}`;
+    return '/crm/index.html';
   }, [identity]);
 
   async function sendCode(event: React.FormEvent) {
@@ -106,7 +116,11 @@ export default function CrmGate() {
   if (!isLoaded || (isSignedIn && !identity)) {
     body = <main className="secure-loading"><span className="secure-orbit">O</span><strong>Preparando seu CRM...</strong><small>Seus dados permanecem protegidos.</small></main>;
   } else if (isSignedIn && identity) {
-    body = <main className="crm-shell"><iframe title="NivionTech CRM" src={iframeUrl} /></main>;
+    body = (
+      <main className="crm-shell">
+        <iframe title="NivionTech CRM" src={iframeUrl} onLoad={() => setIframeReady(true)} />
+      </main>
+    );
   } else {
     body = (
     <main className="marketing-site">
