@@ -1061,6 +1061,7 @@ function logout(){sessionStorage.removeItem(SESSION);if(clerkIdentity){window.pa
 $('#logoutButton').onclick=logout;
 $('#onboardingLogout').onclick=logout;
 $('#menuButton').onclick=()=>$('.sidebar').classList.toggle('open');
+document.querySelector('.titanium-mobile-new')?.addEventListener('click',()=>$('#newButton').click());
 function renderDateCardIdentity(){const target=$('#dateCardUser');if(target)target.textContent=appState.currentUser?.name||''}
 function renderMenuNewBadges(){document.querySelectorAll('.sidebar nav button[data-view]').forEach(button=>{button.querySelector('.menu-new-badge')?.remove();if(NEW_MENU_ITEMS.includes(button.dataset.view))button.insertAdjacentHTML('beforeend','<em class="menu-new-badge">NOVO</em>')})}
 function closePremiumSelects(except=null){document.querySelectorAll('.premium-select.open').forEach(shell=>{if(shell!==except){shell.classList.remove('open');shell.querySelector('.premium-select-trigger')?.setAttribute('aria-expanded','false')}})}
