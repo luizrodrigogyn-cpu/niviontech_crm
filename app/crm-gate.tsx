@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth, useClerk, useSignIn, useUser } from '@clerk/nextjs';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import BrandIntroOverlay from './brand-intro-overlay';
 
 type BootstrapIdentity = {
@@ -32,6 +32,8 @@ export default function CrmGate() {
   const [message, setMessage] = useState('');
   const [identity, setIdentity] = useState<BootstrapIdentity | null>(null);
   const [iframeReady, setIframeReady] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -49,7 +51,7 @@ export default function CrmGate() {
         if (error.name !== 'AbortError') setMessage('Seu acesso foi confirmado, mas a empresa ainda não carregou. Atualize a página.');
       });
     return () => controller.abort();
-  }, [isSignedIn, user?.id]);
+  }, [isSignedIn, user?.id, bootstrapAttempt]);
 
   useEffect(() => {
     const listener = (event: MessageEvent) => {
@@ -74,7 +76,7 @@ export default function CrmGate() {
         email: identity.email,
       },
     };
-    window.parent.postMessage(message, window.location.origin);
+    iframeRef.current?.contentWindow?.postMessage(message, window.location.origin);
   }, [identity, iframeReady]);
 
   const iframeUrl = useMemo(() => {
@@ -114,11 +116,11 @@ export default function CrmGate() {
   let body: React.ReactNode;
 
   if (!isLoaded || (isSignedIn && !identity)) {
-    body = <main className="secure-loading"><span className="secure-orbit">O</span><strong>Preparando seu CRM...</strong><small>Seus dados permanecem protegidos.</small></main>;
+    body = <main className="secure-loading"><span className="secure-orbit">O</span><strong>{message || 'Preparando seu CRM...'}</strong><small>{message ? 'Sua sessão continua protegida.' : 'Seus dados permanecem protegidos.'}</small>{message && <button type="button" onClick={() => { setMessage(''); setBootstrapAttempt(value => value + 1); }}>Tentar novamente</button>}</main>;
   } else if (isSignedIn && identity) {
     body = (
       <main className="crm-shell">
-        <iframe title="NivionTech CRM" src={iframeUrl} onLoad={() => setIframeReady(true)} />
+        <iframe ref={iframeRef} title="NivionTech CRM" src={iframeUrl} onLoad={() => setIframeReady(true)} />
       </main>
     );
   } else {

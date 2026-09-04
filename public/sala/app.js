@@ -23,7 +23,7 @@ const token = /^[0-9a-f]{32}$/i.test(tokenCandidate) ? tokenCandidate : '';
 clearTokenFromUrl();
 
 const money = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
-const date = value => (value ? new Intl.NumberFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value + 'T12:00:00')) : 'a combinar');
+const date = value => (value ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(value + 'T12:00:00')) : 'a combinar');
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 function text(selector, value) {

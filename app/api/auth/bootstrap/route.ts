@@ -1,5 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { migrateOrgEncryption, recordLoginAudit, resolveMembership, response, upsertMemberProfile } from '../../../../db/org';
+import { migrateOrgEncryption, recordLoginAudit, resolveMembership, response, updateMemberAccessRole, upsertMemberProfile } from '../../../../db/org';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +22,10 @@ export async function GET() {
     preferredRole: metadata.niviontechOrgId ? 'member' : 'owner',
   });
   const profile = membership.role === 'owner' ? 'Proprietário/Admin' : metadata.niviontechRole || 'Colaborador comercial';
+  const accessRole = await updateMemberAccessRole(userId, profile);
   await migrateOrgEncryption(membership.orgId);
   await upsertMemberProfile({ userId, orgId: membership.orgId, email, name, profile });
   const activeSessions = Math.min(sessions.totalCount, maxActiveSessions);
   await recordLoginAudit({ userId, orgId: membership.orgId, sessionId, activeSessions });
-  return response({ userId, orgId: membership.orgId, role: membership.role, profile, name, email, activeSessions, maxActiveSessions });
+  return response({ userId, orgId: membership.orgId, role: accessRole, profile, name, email, activeSessions, maxActiveSessions });
 }

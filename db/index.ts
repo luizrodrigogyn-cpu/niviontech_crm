@@ -1,3 +1,5 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
 type Row = Record<string, unknown>;
 
 const isLocalNode = typeof process !== 'undefined' && process.release?.name === 'node';
@@ -22,6 +24,7 @@ function localD1() {
         },
         async first<T>() {
           if (normalized.includes('from crm_org_members')) return (memory.members.get(String(values[0])) || null) as T | null;
+          if (normalized.includes('from crm_member_profiles')) return (memory.profiles.get(String(values[0])) || null) as T | null;
           if (normalized.includes('from crm_orgs where org_id')) return (memory.orgs.get(String(values[0])) || null) as T | null;
           if (normalized.includes('from crm_orgs where invite_code')) {
             return ([...memory.orgs.values()].find((row) => row.invite_code === values[0]) || null) as T | null;
@@ -85,6 +88,13 @@ function localD1() {
             memory.snapshots.set(String(id), { ...current, payload });
             return { meta: { changes: 1 } };
           }
+          if (normalized.startsWith('update crm_org_members set role')) {
+            const [role, userId] = values;
+            const current = memory.members.get(String(userId));
+            if (!current) return { meta: { changes: 0 } };
+            memory.members.set(String(userId), { ...current, role });
+            return { meta: { changes: 1 } };
+          }
           return { meta: { changes: 0 } };
         },
       };
@@ -94,8 +104,8 @@ function localD1() {
 
 const localDatabase = localD1();
 
-export function getD1() {
-  if (workerEnv?.DB) return workerEnv.DB;
-  if (isLocalNode) return localDatabase;
+export function getD1(): D1Database {
+  if (workerEnv?.DB) return workerEnv.DB as D1Database;
+  if (isLocalNode) return localDatabase as unknown as D1Database;
   throw new Error('Cloudflare D1 binding DB is unavailable.');
 }

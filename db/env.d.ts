@@ -5,3 +5,7 @@ declare namespace Cloudflare {
     PROSPECT_MONTHLY_QUERY_CAP?: string;
   }
 }
+
+declare module 'cloudflare:workers' {
+  export const env: Cloudflare.Env;
+}

@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { buildProspectingQueries, defaultProspectProfile } from '../../../../modules/prospecting.js';
+import { buildProspectingQueries } from '../../../../modules/prospecting.js';
 import { getD1 } from '../../../../db';
 import { resolveMembership, response } from '../../../../db/org';
 
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     automaticSending: false,
   }, 503);
 
-  const queries = buildProspectingQueries({ ...defaultProspectProfile, ...profile }).slice(0, 6);
+  const queries = buildProspectingQueries(profile as any).slice(0, 6);
   if (!queries.length) return response({ error: 'no_search_queries' }, 400);
   const usage = await reserveQueries(orgId, queries.length);
   if (!usage.accepted) return response({

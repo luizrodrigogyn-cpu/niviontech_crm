@@ -1,10 +1,15 @@
 import { getD1 } from './index';
-import { decryptPayload, encryptPayload, encryptText, isEncrypted, sanitizeCrmPayload } from './crypto';
+import { decryptPayload, decryptText, encryptPayload, encryptText, isEncrypted, sanitizeCrmPayload } from './crypto';
 
 export const MAX_PAYLOAD_BYTES = 2_500_000;
 
 export type OrgRow = { org_id: string; payload: string; revision: number; updated_at: string; device_id: string; invite_code: string };
 export type MemberRow = { user_id: string; org_id: string; role: string; joined_at: string };
+export type AccessRole = 'owner' | 'manager' | 'seller';
+
+function accessRole(value: string): AccessRole {
+  return value === 'owner' ? 'owner' : value === 'manager' ? 'manager' : 'seller';
+}
 
 export function response(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
@@ -57,7 +62,7 @@ export async function ensureSchema() {
   await db.prepare(`CREATE TABLE IF NOT EXISTS crm_org_members (
     user_id TEXT PRIMARY KEY NOT NULL,
     org_id TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'member',
+    role TEXT NOT NULL DEFAULT 'seller',
     joined_at TEXT NOT NULL
   )`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS crm_member_profiles (
@@ -157,15 +162,30 @@ async function createOrgForUser(userId: string) {
 export async function resolveMembership(userId: string, options: { preferredOrgId?: string; preferredRole?: 'owner' | 'member' } = {}) {
   const db = await ensureSchema();
   const existing = await db.prepare('SELECT user_id, org_id, role, joined_at FROM crm_org_members WHERE user_id = ?').bind(userId).first<MemberRow>();
-  if (existing) return { orgId: existing.org_id, role: existing.role as 'owner' | 'member' };
+  if (existing) return { orgId: existing.org_id, role: accessRole(existing.role) };
   if (options.preferredOrgId) {
     const org = await getOrgRow(options.preferredOrgId);
     if (!org) throw new Error('invited_org_not_found');
-    const role = options.preferredRole || 'member';
+    const role = options.preferredRole === 'owner' ? 'owner' : 'seller';
     await db.prepare('INSERT INTO crm_org_members (user_id, org_id, role, joined_at) VALUES (?, ?, ?, ?)').bind(userId, org.org_id, role, new Date().toISOString()).run();
     return { orgId: org.org_id, role };
   }
   return createOrgForUser(userId);
+}
+
+export async function updateMemberAccessRole(userId: string, profile: string) {
+  const db = await ensureSchema();
+  const desired: AccessRole = profile === 'Gestor Comercial' ? 'manager' : profile === 'Proprietário/Admin' ? 'owner' : 'seller';
+  const current = await db.prepare('SELECT role FROM crm_org_members WHERE user_id = ?').bind(userId).first<{role:string}>();
+  if (!current || current.role === 'owner') return current?.role === 'owner' ? 'owner' : desired;
+  await db.prepare('UPDATE crm_org_members SET role = ? WHERE user_id = ?').bind(desired, userId).run();
+  return desired;
+}
+
+export async function getMemberAccessIdentity(userId: string) {
+  const db = await ensureSchema();
+  const row = await db.prepare('SELECT display_name, profile FROM crm_member_profiles WHERE user_id = ?').bind(userId).first<{display_name:string;profile:string}>();
+  return row ? { name: await decryptText(row.display_name), profile: row.profile } : { name: '', profile: 'Colaborador comercial' };
 }
 
 export async function upsertMemberProfile(profile: { userId: string; orgId: string; email: string; name: string; profile: string }) {

@@ -1,5 +1,6 @@
 import { ensureSchema, response } from '../../../../db/org';
 import { decryptText } from '../../../../db/crypto';
+import type { D1Database } from '@cloudflare/workers-types';
 
 export const dynamic = 'force-dynamic';
 const encoder = new TextEncoder();
@@ -63,11 +64,11 @@ function clientIpFromRequest(request: Request) {
 }
 
 async function recordRoomAccessEvent(
-  db,
+  db: D1Database,
   token: string,
   eventStatus: string,
   request: Request,
-  options: { codePrefix?: string; details?: string } = {},
+  options: { details?: string } = {},
 ) {
   try {
     const [ipHash, uaHash] = await Promise.all([
@@ -82,7 +83,7 @@ async function recordRoomAccessEvent(
         crypto.randomUUID(),
         token,
         eventStatus,
-        options.codePrefix || null,
+        null,
         new Date().toISOString(),
         ipHash,
         uaHash,
@@ -129,7 +130,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
 
   const code = normalizeAccessCode(body.accessCode);
-  const codePrefix = code.length >= 2 ? code.slice(-2) : null;
   const db = await ensureSchema();
   const row = await db
     .prepare(
@@ -139,34 +139,38 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     .first<RoomRow>();
 
   if (!row) {
-    await recordRoomAccessEvent(db, normalizedToken, 'not_found', request, { codePrefix, details: 'room_not_found' });
+    await recordRoomAccessEvent(db, normalizedToken, 'not_found', request, { details: 'room_not_found' });
     return response({ error: 'not_found' }, 404);
   }
 
   if (!active(row)) {
-    await recordRoomAccessEvent(db, normalizedToken, 'room_unavailable', request, { codePrefix, details: 'inactive_room' });
+    await recordRoomAccessEvent(db, normalizedToken, 'room_unavailable', request, { details: 'inactive_room' });
     return response({ error: 'room_unavailable' }, 410);
   }
 
   if (isLocked(row)) {
-    await recordRoomAccessEvent(db, normalizedToken, 'temporarily_locked', request, { codePrefix, details: 'active_lockout' });
+    await recordRoomAccessEvent(db, normalizedToken, 'temporarily_locked', request, { details: 'active_lockout' });
     return response({ error: 'temporarily_locked' }, 429);
+  }
+  if (row!.locked_until) {
+    await db.prepare('UPDATE crm_deal_rooms SET failed_attempts = 0, locked_until = NULL, updated_at = ? WHERE token = ?').bind(new Date().toISOString(), normalizedToken).run();
+    row!.failed_attempts = 0;
+    row!.locked_until = null;
   }
 
   const providedDigest = await digest(`${normalizedToken}:${code}`);
   if (code.length !== 6 || !timingSafeEquals(providedDigest, row!.access_hash)) {
-    const attempts = Number(row!.failed_attempts || 0) + 1;
-    const lockedUntil = attempts >= MAX_INVALID_ATTEMPTS ? new Date(Date.now() + 15 * 60_000).toISOString() : null;
-
+    const now = new Date().toISOString();
+    const lockUntil = new Date(Date.now() + 15 * 60_000).toISOString();
     await db
-      .prepare('UPDATE crm_deal_rooms SET failed_attempts = ?, locked_until = ?, updated_at = ? WHERE token = ?')
-      .bind(attempts, lockedUntil, new Date().toISOString(), normalizedToken)
+      .prepare('UPDATE crm_deal_rooms SET failed_attempts = failed_attempts + 1, locked_until = CASE WHEN failed_attempts + 1 >= ? THEN ? ELSE NULL END, updated_at = ? WHERE token = ?')
+      .bind(MAX_INVALID_ATTEMPTS, lockUntil, now, normalizedToken)
       .run();
-
+    const attemptState = await db.prepare('SELECT failed_attempts, locked_until FROM crm_deal_rooms WHERE token = ?').bind(normalizedToken).first<{failed_attempts:number;locked_until:string|null}>();
+    const lockedUntil = attemptState?.locked_until || null;
     const eventStatus = lockedUntil ? 'temporarily_locked' : 'invalid_code';
     await recordRoomAccessEvent(db, normalizedToken, eventStatus, request, {
-      codePrefix,
-      details: lockedUntil ? 'lockout_threshold_reached' : 'code_mismatch',
+      details: lockedUntil ? 'lockout_threshold_reached' : `code_mismatch_attempt_${Number(attemptState?.failed_attempts || 0)}`,
     });
 
     return response({ error: lockedUntil ? 'temporarily_locked' : 'invalid_code' }, lockedUntil ? 429 : 403);
@@ -180,7 +184,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     .bind(now, now, normalizedToken)
     .run();
 
-  await recordRoomAccessEvent(db, normalizedToken, 'success', request, { codePrefix, details: 'access_granted' });
+  await recordRoomAccessEvent(db, normalizedToken, 'success', request, { details: 'access_granted' });
 
   return response({
     payload: JSON.parse(await decryptText(row!.payload)),
